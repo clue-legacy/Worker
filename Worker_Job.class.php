@@ -173,7 +173,3 @@ class Worker_Job{
         return $this->return;
     }
 }
-
-class Worker_Job_Ignore extends Worker_Job{
-    
-}
