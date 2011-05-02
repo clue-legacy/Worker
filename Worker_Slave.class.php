@@ -456,6 +456,55 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     }
     
     /**
+     * get new proxy interface waiting for methods to return (normal blocking method calls)
+     * 
+     * @return Worker_Proxy_Block
+     * @see Worker_Proxy_Block
+     */
+    public function proxyBlock(){
+        return new Worker_Proxy_Block($this);
+    }
+    
+    /**
+     * call given method (and optional arguments)
+     * 
+     * this is a blocking call and wait for the given job to be finished
+     * 
+     * @param string|Worker_Job $name
+     * @return mixed return value as-is
+     * @throws Exception exception as-is
+     */
+    public function on($name){
+        if($name instanceof Worker_Job){
+            $job = $name;
+        }else{
+            $args = func_get_args();
+            unset($args[0]);
+            $job = new Worker_Job($name,$args); // create new job for given arguments
+        }
+        
+        $this->putPacket($job);
+        $handle = $job->getHandle();
+        
+        $packets = array();
+        do{
+            $packet = $this->getPacketWait();                                   // wait for new packet
+            if($packet->getHandle() === $handle){                               // correct packet received
+                $job = $packet;
+                break;
+            }else{
+                $packets[] = $packet;                                           // buffer incorrect packet
+            }
+        }while(true);
+        
+        foreach($packets as $packet){                                           // put back incorrect packets
+            $this->putBack($packet);
+        }
+        
+        return $job->ret();                                                     // return job results
+    }
+    
+    /**
      * add new job to outgoing queue (should not be called manually)
      * 
      * @param Worker_Job   $job
