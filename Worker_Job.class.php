@@ -102,12 +102,9 @@ class Worker_Job{
      * @param mixed $on instance or object to call methods on
      */
     public function call($on){
+        $r = new Output_Mirror($this->output); // mirror all output to $this->output (keep reference to $r to trigger garbage collection)
+        
         $this->timeStart = microtime(true);
-        $output =& $this->output;
-        ob_start(function($part) use(&$output){
-            $output .= $part;
-            return false;
-        },2);
         try{
             if(!is_callable(array($on,$this->callee))){
                 throw new Worker_Exception('Given method not callable');
@@ -117,7 +114,6 @@ class Worker_Job{
         catch(Exception $e){
             $this->exception = $e;
         }
-        ob_end_flush();
         $this->timeEnd = microtime(true);
     }
     
