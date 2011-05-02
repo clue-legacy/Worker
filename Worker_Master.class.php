@@ -202,25 +202,18 @@ class Worker_Master extends Stream_Master{
      * @param float|NULL $timeout maximum time to wait in seconds (NULL=wait forever)
      * @return Worker_Master this (chainable)
      * @throws Worker_Exception when timeout is reached
-     * @uses Worker_Master::go()
+     * @uses Worker_Master::waitData()
      */
     public function waitPacket($timeout=NULL){
-        if(!$this->hasPacket()){
-            $cleanup = new Cleanup();
-            if($timeout !== NULL){                                              // timeout given
-                $cleanup->add(array($this,'removeTask'),$this->addTask(Worker_Task::factoryOnce($timeout,function(){
-                    throw new Worker_Timeout_Exception('Timeout');              // throw exception via task
-                })));
+        if($timeout !== NULL){
+            $timeout += microtime(true);
+        }
+        while(!$this->hasPacket()){
+            $this->waitData($timeout);
+            
+            if($timeout !== NULL && microtime(true) > $timeout && !$this->hasPacket()){
+                throw new Worker_Timeout_Exception('Timeout');
             }
-            
-            $master = $this;
-            $cleanup->add(array($this,'removeTask'),$this->addTask(Worker_Task::factoryAsap(function() use (&$master){ // add tick function in order to return when a packet is available
-                if($master->hasPacket()){
-                    $master->halt();
-                }
-            })));
-            
-            $this->go();
         }
         return $this;
     }
@@ -239,42 +232,51 @@ class Worker_Master extends Stream_Master{
      * start event loop
      * 
      * @return Worker_Master this (chainable)
+     * @uses Worker_Master::waitData()
      */
     public function go(){
         $ignore = NULL;
         $this->go = true;
         
         do{
-            $timeout = NULL;
-            foreach($this->tasks as $task){                                     // cycle through tasks in order to determine timeout
-                if($task->isActive()){
-                    $t = $task->getTimeout();
-                    if($t !== NULL && ($timeout === NULL || $t < $timeout)){
-                        $timeout = $t;
-                    }
-                }
-            }
-            if($timeout !== NULL){                                              // calculate timeout into ssleep/usleep
-                $timeout = $timeout - microtime(true);
-                if($timeout < 0){
-                    $timeout = 0;
-                }
-                if($this->debug) Debug::notice('[Wait for '.Debug::param(max($ssleep,0)).'s]');
-            }else if($this->debug) Debug::notice('[Wait forever]');
-            
-            $this->streamSelect($timeout);
-            
-            foreach($this->tasks as $key=>$task){                               // perform all expired tasks
-                if($task->isActive() && $task->isExpired()){
-                    $task->act();
-                    
-                    if(!$task->isActive()){
-                        unset($this->tasks[$key]);
-                    }
-                }
-            }
+            $this->waitData();
         }while($this->go);
         return $this;
+    }
+    
+    /**
+     * wait for data (or timeout) once
+     * 
+     * @param float|NULL $timeout maximum timeout
+     */
+    protected function waitData($timeout = NULL){
+        foreach($this->tasks as $task){                                         // cycle through tasks in order to determine timeout
+            if($task->isActive()){
+                $t = $task->getTimeout();
+                if($t !== NULL && ($timeout === NULL || $t < $timeout)){
+                    $timeout = $t;
+                }
+            }
+        }
+        if($timeout !== NULL){                                                  // calculate timeout into ssleep/usleep
+            $timeout = $timeout - microtime(true);
+            if($timeout < 0){
+                $timeout = 0;
+            }
+            if($this->debug) Debug::notice('[Wait for '.Debug::param(max($ssleep,0)).'s]');
+        }else if($this->debug) Debug::notice('[Wait forever]');
+        
+        $this->streamSelect($timeout);
+        
+        foreach($this->tasks as $key=>$task){                                   // perform all expired tasks
+            if($task->isActive() && $task->isExpired()){
+                $task->act();
+                
+                if(!$task->isActive()){
+                    unset($this->tasks[$key]);
+                }
+            }
+        }
     }
     
     /**
