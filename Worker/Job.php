@@ -48,7 +48,7 @@ class Worker_Job{
     private $return;
     
     /**
-     * exception thrown during exceution of function
+     * exception thrown during execution of function
      * 
      * @var NULL|Exception
      */

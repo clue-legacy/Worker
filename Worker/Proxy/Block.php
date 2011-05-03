@@ -12,10 +12,10 @@ class Worker_Proxy_Block extends Worker_Proxy{
      * @param string $name
      * @param array  $args
      * @return mixed return value as-is
-     * @uses Worker_Slave::on()
+     * @uses Worker_Slave::call()
      */
     public function __call($name,$args){
         $job = new Worker_Job($name,$args);
-        return $this->slave->on($job);
+        return $this->slave->call($job);
     }
 }

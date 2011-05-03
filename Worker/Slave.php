@@ -474,7 +474,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @return mixed return value as-is
      * @throws Exception exception as-is
      */
-    public function on($name){
+    public function call($name){
         if($name instanceof Worker_Job){
             $job = $name;
         }else{
