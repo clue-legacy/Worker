@@ -507,15 +507,15 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     /**
      * add new job to outgoing queue (should not be called manually)
      * 
-     * @param Worker_Job   $job
-     * @param Worker_Proxy $proxy
+     * @param Worker_Job        $job
+     * @param Worker_Proxy|NULL $proxy
      * @uses Worker_Slave::putPacket()
      */
-    public function putJob($job,$proxy){
+    public function putJob($job,$proxy=NULL){
         if($this->debug) Debug::notice('[Outgoing '.Debug::param($job).']');
         $this->putPacket($job);
         
-        if(!in_array($proxy,$this->proxies,true)){                              // only add proxy if it's not listed already
+        if($proxy !== NULL && !in_array($proxy,$this->proxies,true)){           // only add proxy if it's not listed already
             $this->proxies[] = $proxy;
         }
     }
