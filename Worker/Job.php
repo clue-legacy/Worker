@@ -17,63 +17,63 @@ class Worker_Job{
      * 
      * @var string
      */
-    private $callee;
+    protected $callee;
     
     /**
      * function arguments
      * 
      * @var array
      */
-    private $arguments;
+    protected $arguments;
     
     /**
      * internal job handle
      * 
      * @var int
      */
-    private $handle;
+    protected $handle;
     
     /**
      * function output (echo)
      * 
      * @var string
      */
-    private $output;
+    protected $output;
     
     /**
      * function return code
      * 
      * @var mixed
      */
-    private $return;
+    protected $return;
     
     /**
      * exception thrown during execution of function
      * 
      * @var NULL|Exception
      */
-    private $exception;
+    protected $exception;
     
     /**
      * time job was created on
      * 
      * @var float
      */
-    private $timeCreate;
+    protected $timeCreate;
     
     /**
      * time job was started on
      * 
      * @var float
      */
-    private $timeStart;
+    protected $timeStart;
     
     /**
      * time job was ended on
      * 
      * @var float
      */
-    private $timeEnd;
+    protected $timeEnd;
     
     /**
      * instanciate new exception
@@ -110,7 +110,7 @@ class Worker_Job{
             
         $this->timeStart = microtime(true);
         try{
-            $this->return = $this->methods->call($this->callee,$this->arguments);
+            $this->return = $methods->call($this->callee,$this->arguments);
         }
         catch(Exception $e){
             $this->exception = $e;
