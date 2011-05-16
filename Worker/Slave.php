@@ -609,13 +609,13 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     public function addMethod($name,$fn){
         $this->methods->addMethod($name,$fn);
         
-        return $this->putPacket($this->methods);
+        return $this->putPacket($this->methods->toPacket());
     }
     
     public function addMethods($methods){
         $this->methods->addMethods($methods);
         
-        return $this->putPacket($this->methods);
+        return $this->putPacket($this->methods->toPacket());
     }
     
     

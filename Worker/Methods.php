@@ -39,4 +39,8 @@ class Worker_Methods{
     public static function extract($class){
         return array();
     }
+    
+    public function toPacket(){
+        return new Worker_Methods(array_fill_keys(array_keys($this->methods),NULL));
+    }
 }
