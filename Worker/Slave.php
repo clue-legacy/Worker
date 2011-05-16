@@ -2,20 +2,6 @@
 
 abstract class Worker_Slave implements Interface_Stream_Duplex{
     /**
-     * packet start identifier
-     * 
-     * @var string
-     */
-    const STX = "\x02";
-    
-    /**
-     * packet end delimiter
-     * 
-     * @var string
-     */
-    const ETX = "\x03";
-    
-    /**
      * chunk to read at once
      * 
      * @var int
@@ -35,13 +21,6 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @var string
      */
     private $sending;
-    
-    /**
-     * incoming buffer
-     * 
-     * @var string
-     */
-    private $receiving;
     
     /**
      * stream to read from
@@ -106,9 +85,15 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      */
     protected $methodsRemote;
     
+    /**
+     * protocol handler instance
+     * 
+     * @var Worker_Protocol
+     */
+    protected $protocol;
+    
     public function __construct($rstream,$wstream){
         $this->sending   = '';
-        $this->receiving = '';
         $this->rstream   = $rstream;
         $this->wstream   = $wstream;
         $this->vars      = array();
@@ -120,6 +105,9 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         
         $this->methods = new Worker_Methods();
         $this->methodsRemote = array();
+        
+        $this->protocol = new Worker_Protocol();
+        $this->protocol->setMaxlength(self::BUFFER_MAX);
     }
     
     /**
@@ -164,7 +152,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @return boolean
      */
     public function hasPacket(){
-        return (strpos($this->receiving,self::ETX) !== false);
+        return $this->protocol->hasPacket();
     }
     
     /**
@@ -176,7 +164,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @uses Worker_Slave::send() if autosend is set
      */
     public function putPacket($data){
-        $this->sending .= self::STX.serialize($data).self::ETX;
+        $this->sending .= $this->protocol->marshall($data);
         
         if(strlen($this->sending) > self::BUFFER_MAX){
             throw new Worker_Exception('Outgoing buffer size of '.Debug::param(strlen($this->sending)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
@@ -194,27 +182,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @throws Worker_Exception when packet is not ready
      */
     public function getPacket(){
-        $pos = strpos($this->receiving,self::ETX);                              // check for packet end
-        if($pos === false){
-            throw new Worker_Exception('Packet end missing');
-        }
-        
-        $data = substr($this->receiving,0,$pos);                                // read packet until packet end
-        
-        $pos = strpos($this->receiving,self::STX);                              // change buffer to beginning of next packet
-        if($pos !== false){                                                     // next start found
-            $this->receiving = substr($this->receiving,$pos+1);                 // skip packet start
-            //if($this->debug) Debug::notice('Incoming remaings '.Debug::param($this->receiving));
-        }else{                                                                  // no next start found
-            $this->receiving = '';                                              // clear buffer (may contain outbound data)
-            //if($this->debug) Debug::notice('Clear incoming buffer');
-        }
-        
-        $data = unserialize($data);
-        //if($this->debug) Debug::notice('Packet '.Debug::param($data));
-        //Debug::param('Incoming buffer remaining '.Debug::param($this->receiving));
-        
-        return $data;
+        return $this->protocol->getPacket();
     }
     
     /**
@@ -302,7 +270,8 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * 
      * @throws Worker_Exception on error or if buffer exceeds maximum size
      * @return Worker_Slave this (chainable)
-     * @uses Worker_Slave::onData()
+     * @uses Worker_Slave::getPackets()
+     * @uses Worker_Slave::onPacket() on each packet received
      */
     public function streamReceive(){
         $buffer = fread($this->rstream,self::BUFFER_CHUNK);
@@ -314,38 +283,9 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
             throw new Worker_Disconnect_Exception('No data read, stream closed?');
         }
         
-        $this->onData($buffer);
-        return $this;
-    }
-    
-    /**
-     * called when new data has been received
-     * 
-     * @param string $buffer
-     * @uses Worker_Slave::getPackets()
-     * @uses Worker_Slave::onPacket() on each packet received
-     */
-    protected function onData($buffer){
         if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
         
-        if($this->receiving !== ''){                                            // already buffering, just append
-            $this->receiving .= $buffer;
-        }else{                                                                  // first packet
-            $pos = strpos($buffer,self::STX);                                   // make sure it includes packet start
-            if($pos !== false){
-                //if($this->debug) echo '[Skipping '.Debug::param(substr($buffer,0,$pos)).']';
-                $this->receiving = substr($buffer,$pos+1);                      // skip packet start
-            }else{                                                              // ignore outbound data
-                if($this->debug) echo '[Received out of bound '.Debug::param($buffer).']';
-            }
-        }
-        if($this->debug && $this->receiving !== $buffer) Debug::notice('[Incoming buffer now '.Debug::param($this->receiving).']');
-        
-        $this->old = substr($this->old.$buffer,-20000);
-        
-        if(strlen($this->receiving) > self::BUFFER_MAX){
-            throw new Worker_Exception('Incoming buffer size of '.Debug::param(strlen($this->receiving)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
-        }
+        $this->protocol->onData($buffer);
         
         foreach($this->getPackets() as $packet){
             $this->onPacket($packet);
@@ -381,7 +321,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @return Worker_Slave this (chainable)
      */
     protected function putBack($data){
-        $this->receiving = serialize($data).self::ETX.(($this->receiving === '') ? '' : (self::STX.$this->receiving));
+        $this->protocol->putBack($data);
         return $this;
     }
     
