@@ -1,26 +1,12 @@
 <?php
 
-class Worker_Master extends Stream_Master{
+class Worker_Master{
     /**
      * timeout for establishing new connections
      * 
      * @var float
      */
     const TIMEOUT_CONNECTION = 30;
-    
-    /**
-     * array of worker slaves
-     * 
-     * @var array[Worker_Slave]
-     */
-    protected $slaves;
-    
-    /**
-     * ports waiting for new connections
-     * 
-     * @var array[resource]
-     */
-    protected $ports;
     
     /**
      * array of active tasks
@@ -60,26 +46,39 @@ class Worker_Master extends Stream_Master{
      * instanciate new master
      */
     public function __construct(){
-        $this->slaves = array();
-        $this->ports  = array();
         $this->tasks  = array();
         
         $this->go    = false;
         $this->debug = false; //true;
+        
+        $this->stream = new Stream_Master_Standalone();
+        
+        $that = $this;
+        
+        $this->stream->addEvent('clientConnect',function($socket) use ($that){
+            $slave = $that->addSlave(new Worker_Slave_Stream($socket));
+        
+            echo NL.'SLAVE CONNECTED:'.NL.Debug::param($slave).NL;
+        });
+        
+        $this->stream->addEvent('clientDisconnect',function($slave){
+            echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
+        });
     }
     
     /**
      * destruct master (clean up all streams)
      */
     public function __destruct(){
-        foreach($this->slaves as $slave){
+        foreach($this->stream->getClients() as $slave){
             $slave->close();
         }
-        $this->slaves = array();
         
-        foreach($this->ports as $port){
+        foreach($this->stream->getPorts() as $port){
             fclose($port);
         }
+        
+        $this->stream = NULL;
     }
     
     /**
@@ -93,9 +92,7 @@ class Worker_Master extends Stream_Master{
             $slave = new Worker_Slave_Process($slave);
         }
         $slave->setAutosend(false);
-        $id = $this->slaves ? (max(array_keys($this->slaves)) + 1) : 1;
-        $this->slaves[$id] = $slave;
-        //$this->onSlaveConnect($slave);
+        $this->stream->addClient($slave);
         return $slave;
     }
     
@@ -105,11 +102,7 @@ class Worker_Master extends Stream_Master{
      * @return array
      */
     public function getSlaves(){
-        $ret = array();
-        foreach($this->slaves as $id=>$slave){
-            $ret[$id] = $slave;
-        }
-        return $ret;
+        return $this->stream->getClients();
     }
     
     /**
@@ -120,12 +113,7 @@ class Worker_Master extends Stream_Master{
      * @throws Worker_Exception on error
      */
     public function getSlaveId($slave){
-        foreach($this->slaves as $id=>$s){
-            if($s === $slave){
-                return $id;
-            }
-        }
-        throw new Worker_Exception('Invalid slave object given');
+        return $this->stream->getClientId($slave);
     }
     
     /**
@@ -135,13 +123,7 @@ class Worker_Master extends Stream_Master{
      * @return Worker_Master this (chainable)
      */
     public function addPort($port){
-        $ip = '127.0.0.1';
-        $address = 'tcp://'.$ip.':'.$port;
-        $stream = stream_socket_server($address,$errno,$errstr);
-        if($stream === false){
-            throw new Worker_Exception('Unable to start server on '.Debug::param($address));
-        }
-        $this->ports[] = $stream;
+        $this->stream->addPort($port);
         return $this;
     }
     
@@ -199,15 +181,12 @@ class Worker_Master extends Stream_Master{
      * 
      * will wait for a new event or timeout (Whichever comes first)
      * 
-     * @param float|NULL $timeout maximum time to wait in seconds (NULL=wait forever)
+     * @param float|NULL $timeout maximum time to wait as target timestamp (NULL=wait forever)
      * @return Worker_Master this (chainable)
      * @throws Worker_Exception when timeout is reached
      * @uses Worker_Master::waitData()
      */
     public function waitPacket($timeout=NULL){
-        if($timeout !== NULL){
-            $timeout += microtime(true);
-        }
         while(!$this->hasPacket()){
             $this->waitData($timeout);
             
@@ -247,7 +226,7 @@ class Worker_Master extends Stream_Master{
     /**
      * wait for data (or timeout) once
      * 
-     * @param float|NULL $timeout maximum timeout
+     * @param float|NULL $timeout maximum timeout (timestamp!)
      */
     protected function waitData($timeout = NULL){
         foreach($this->tasks as $task){                                         // cycle through tasks in order to determine timeout
@@ -266,7 +245,7 @@ class Worker_Master extends Stream_Master{
             if($this->debug) Debug::notice('[Wait for '.Debug::param(max($ssleep,0)).'s]');
         }else if($this->debug) Debug::notice('[Wait forever]');
         
-        $this->streamSelect($timeout);
+        $this->stream->startOnce($timeout);
         
         foreach($this->tasks as $key=>$task){                                   // perform all expired tasks
             if($task->isActive() && $task->isExpired()){
@@ -286,7 +265,7 @@ class Worker_Master extends Stream_Master{
      */
     public function getSlavesPacket(){
         $ret = array();
-        foreach($this->slaves as $id=>$slave){
+        foreach($this->getSlaves() as $id=>$slave){
             if($slave->hasPacket()){
                 $ret[$id] = $slave;
             }
@@ -300,60 +279,11 @@ class Worker_Master extends Stream_Master{
      * @return boolean
      */
     public function hasPacket(){
-        foreach($this->slaves as $slave){
+        foreach($this->getSlaves() as $slave){
             if($slave->hasPacket()){
                 return true;
             }
         }
         return false;
-    }
-    
-    /**
-     * called when a new slave has connected
-     * 
-     * @param resource $socket
-     */
-    protected function streamClientConnect($socket,$unused){
-        $slave = $this->addSlave(new Worker_Slave_Stream($socket));
-        
-        echo NL.'SLAVE CONNECTED:'.NL.Debug::param($slave).NL;
-    }
-    
-    /**
-     * called when a slave has been disconnected
-     * 
-     * @param Worker_Slave $slav
-     */
-    protected function streamClientDisconnect($slave){
-        $key = array_search($slave,$this->slaves,true);
-        unset($this->slaves[$key]);
-        
-        echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
-    }
-    
-    protected function streamClientSend($slave){
-        try{
-            $slave->streamSend();
-        }
-        catch(Worker_Disconnect_Exception $e){
-            return false;
-        }
-    }
-    
-    protected function streamClientReceive($slave){
-        try{
-            $slave->streamReceive();
-        }
-        catch(Worker_Disconnect_Exception $e){
-            return false;
-        }
-    }
-    
-    protected function getStreamClients(){
-        return $this->slaves;
-    }
-    
-    protected function getStreamPorts(){
-        return $this->ports;
     }
 }
