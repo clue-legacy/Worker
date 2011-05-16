@@ -24,12 +24,16 @@ class Worker_Protocol{
         return $this;
     }
     
+    protected function pack($data){
+        return serialize($data);
+    }
+    
     public function marshall($data){
         if($data instanceof Exception){
             $data = new Exception($data->getMessage(),$data->getCode());
         }
         try{
-            return self::STX.serialize($data).self::ETX;
+            return self::STX.$this->pack($data).self::ETX;
         }
         catch(Exception $e){
             Debug::dump($data);
@@ -85,14 +89,26 @@ class Worker_Protocol{
         }
         if($this->debug && $this->receiving !== $buffer) Debug::notice('[Incoming buffer now '.Debug::param($this->receiving).']');
         
-        //$this->old = substr($this->old.$buffer,-20000);
-        
         if($this->maxlength !== NULL && strlen($this->receiving) > $this->maxlength){
             throw new Worker_Exception('Incoming buffer size of '.Debug::param(strlen($this->receiving)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
         }
     }
     
+    /**
+     * put back given packet to incoming stream buffer
+     * 
+     * @param mixed $data
+     * @return Worker_Protocol this (chainable)
+     */
     public function putBack($data){
-        $this->receiving = serialize($data).self::ETX.(($this->receiving === '') ? '' : (self::STX.$this->receiving));
+        $this->receiving = $this->pack($data).self::ETX.(($this->receiving === '') ? '' : (self::STX.$this->receiving));
+        return $this;
+    }
+    
+    public function putBacks($packets){
+        foreach(array_reverse($packets) as $packet){
+            $this->putBack($packet);
+        }
+        return $this;
     }
 }

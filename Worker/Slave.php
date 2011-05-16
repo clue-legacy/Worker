@@ -65,13 +65,6 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     protected $debug;
     
     /**
-     * old incoming buffer
-     * 
-     * @var string
-     */
-    protected $old;
-    
-    /**
      * keeps track of methods offered to the other side
      * 
      * @var Worker_Methods
@@ -101,7 +94,6 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         $this->autosend  = true;
         
         $this->debug = false; // true;
-        $this->old   = '';
         
         $this->methods = new Worker_Methods();
         $this->methodsRemote = array();
@@ -297,7 +289,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * 
      * @param mixed $packet
      * @uses Worker_Slave::handleJob() to try to handle packet as job
-     * @uses Worker_Slave::putBack() to put back packet to incoming queue if it's not a job
+     * @uses Worker_Protocol::putBack() to put back packet to incoming queue if it's not a job
      */
     protected function onPacket($packet){
         if($packet instanceof Worker_Job){
@@ -311,18 +303,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         }
         
         if($this->debug) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
-        $this->putBack($packet);
-    }
-    
-    /**
-     * put back given packet to incoming stream buffer
-     * 
-     * @param mixed $data
-     * @return Worker_Slave this (chainable)
-     */
-    protected function putBack($data){
-        $this->protocol->putBack($data);
-        return $this;
+        $this->protocol->putBack($packet);
     }
     
     /**
@@ -466,9 +447,9 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
             }
         }while(true);
         
-        if($this->debug) Debug::notice('[Put back useless packets '.Debug::param($packets).']');
-        foreach($packets as $packet){                                           // put back incorrect packets
-            $this->putBack($packet);
+        if($packets){
+            if($this->debug) Debug::notice('[Put back useless packets '.Debug::param($packets).']');
+            $this->protocol->putBacks($packets);
         }
         
         return $job->ret();                                                     // return job results
