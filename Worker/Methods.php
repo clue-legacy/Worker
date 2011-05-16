@@ -4,7 +4,7 @@ class Worker_Methods{
     private $methods;
     
     public function __construct($methods=array()){
-        $this->methods = array();
+        $this->methods = $methods;
     }
     
     public function hasMethod($name){

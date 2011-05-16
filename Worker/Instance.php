@@ -19,7 +19,7 @@ class Worker_Instance extends Worker_Master{
         
         $that = $this;
         $this->addEvent('slaveConnect',function($slave) use ($that){
-            $slave->addMethods($that->getMethods());                            // send each global method to slave
+            $slave->addMethods($that->getMethodsInstance());                    // send each global method to slave
         });
     }
     
@@ -134,12 +134,16 @@ class Worker_Instance extends Worker_Master{
         return $this;
     }
     
+    public function getMethodsInstance(){
+        return $this->methods;
+    }
+    
     /**
      * get array of global method names offered to clients 
      * 
      * @return array
      */
-    public function getMethods(){
+    public function getMethodsNames(){
         return $this->methods->getMethodNames();
     }
 }
