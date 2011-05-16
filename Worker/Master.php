@@ -53,16 +53,22 @@ class Worker_Master{
         
         $this->stream = new Stream_Master_Standalone();
         
+        $this->events = new EventEmitter();
+        
         $that = $this;
         
         $this->stream->addEvent('clientConnect',function($socket) use ($that){
             $slave = $that->addSlave(new Worker_Slave_Stream($socket));
         
             echo NL.'SLAVE CONNECTED:'.NL.Debug::param($slave).NL;
+            
+            $that->events->fireEvent('slaveConnect',$slave);
         });
         
-        $this->stream->addEvent('clientDisconnect',function($slave){
+        $this->stream->addEvent('clientDisconnect',function($slave) use ($that){
             echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
+            
+            $that->events->fireEvent('slaveDisconnect',$slave);
         });
     }
     
@@ -124,6 +130,11 @@ class Worker_Master{
      */
     public function addPort($port){
         $this->stream->addPort($port);
+        return $this;
+    }
+    
+    public function addEvent($name,$fn){
+        $this->events->addEvent($name,$fn);
         return $this;
     }
     
@@ -213,7 +224,7 @@ class Worker_Master{
      * @return Worker_Master this (chainable)
      * @uses Worker_Master::waitData()
      */
-    public function go(){
+    public function start(){
         $ignore = NULL;
         $this->go = true;
         
