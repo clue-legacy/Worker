@@ -310,6 +310,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
             throw new Worker_Exception('Unable to read data from stream');
         }
         if($buffer === ''){
+            new Worker_Exception(); // TODO: temporary workaround
             throw new Worker_Disconnect_Exception('No data read, stream closed?');
         }
         
@@ -325,7 +326,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @uses Worker_Slave::onPacket() on each packet received
      */
     protected function onData($buffer){
-        if($this->debug) Debug::notice('[Received '.Debug::param($buffer).']');
+        if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
         
         if($this->receiving !== ''){                                            // already buffering, just append
             $this->receiving .= $buffer;
@@ -338,7 +339,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
                 if($this->debug) echo '[Received out of bound '.Debug::param($buffer).']';
             }
         }
-        if($this->debug) Debug::notice('[Incoming buffer now '.Debug::param($this->receiving).']');
+        if($this->debug && $this->receiving !== $buffer) Debug::notice('[Incoming buffer now '.Debug::param($this->receiving).']');
         
         $this->old = substr($this->old.$buffer,-20000);
         
@@ -359,10 +360,18 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @uses Worker_Slave::putBack() to put back packet to incoming queue if it's not a job
      */
     protected function onPacket($packet){
-        if(!$this->handleJob($packet)){
-            if($this->debug) Debug::notice('[Incoming packet '.Debug::param($packet).']');
-            $this->putBack($packet);
+        if($packet instanceof Worker_Job){
+            if($this->handleJob($packet)){
+                return;
+            }
+        }else if($packet instanceof Worker_Methods){
+            $this->methodsRemote = $packet->getMethodNames();
+            if($this->debug) Debug::dump('methodsRemote',$this->methodsRemote);
+            return;
         }
+        
+        if($this->debug) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
+        $this->putBack($packet);
     }
     
     /**
@@ -505,15 +514,19 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         
         $packets = array();
         do{
+            if($this->debug) Debug::notice('[Wait for next packet]');
             $packet = $this->getPacketWait();                                   // wait for new packet
             if($packet->getHandle() === $handle){                               // correct packet received
                 $job = $packet;
+                if($this->debug) Debug::notice('[Correct '.Debug::param($job).' received]');
                 break;
             }else{
+                if($this->debug) Debug::notice('[Useless '.Debug::param($packet).' received');
                 $packets[] = $packet;                                           // buffer incorrect packet
             }
         }while(true);
         
+        if($this->debug) Debug::notice('[Put back useless packets '.Debug::param($packets).']');
         foreach($packets as $packet){                                           // put back incorrect packets
             $this->putBack($packet);
         }
@@ -555,8 +568,15 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @uses Worker_Proxy::hasJob() to remove proxy if it has no more jobs attached
      */
     protected function handleJob($job){
-        if($job instanceof Worker_Job){
-            if($this->debug) Debug::notice('[Incoming '.Debug::param($job).']');
+        if($this->debug) Debug::notice('[Incoming job '.Debug::param($job).']');
+        
+        if(!$job->isStarted() /*$job->getSlaveId() === $this->id*/){
+            $job->call($this->methods);
+            if(!($job instanceof Worker_Job_Ignore)){
+                $this->putPacket($job);
+            }
+            return true;
+        }else{
             foreach($this->proxies as $id=>$proxy){
                 if($proxy->handleJob($job)){
                     if(!$proxy->hasJob()){
@@ -566,6 +586,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
                 }
             }
         }
+        
         return false;
     }
     
@@ -613,17 +634,20 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     }
     
     public function addMethods($methods){
-        $this->methods->addMethods($methods);
-        
-        return $this->putPacket($this->methods->toPacket());
+        if($ret = $this->methods->addMethods($methods)){
+            //Debug::backtrace();
+            Debug::dump($ret,$methods);
+            $this->putPacket($this->methods->toPacket());
+        }
+        return $this;
     }
     
     
     public function hasRemoteMethod($name){
-        return isset($this->methodsRemote[$name]);
+        return in_array($name,$this->methodsRemote,true);
     }
     
     public function getRemoteMethods(){
-        return $this->methodsRemote = array();
+        return $this->methodsRemote;
     }
 }

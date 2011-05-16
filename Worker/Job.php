@@ -159,6 +159,10 @@ class Worker_Job{
         return (microtime(true)-$this->timeEnd+$this->timeStart-$this->timeCreate);
     }
     
+    public function isStarted(){
+        return ($this->timeStart !== NULL);
+    }
+    
     /**
      * get return value or re-throw exception
      * 
