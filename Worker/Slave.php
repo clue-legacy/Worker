@@ -92,6 +92,20 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      */
     protected $old;
     
+    /**
+     * keeps track of methods offered to the other side
+     * 
+     * @var Worker_Methods
+     */
+    protected $methods;
+    
+    /**
+     * keeps track of remote methods callable
+     * 
+     * @var array
+     */
+    protected $methodsRemote;
+    
     public function __construct($rstream,$wstream){
         $this->sending   = '';
         $this->receiving = '';
@@ -103,6 +117,9 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         
         $this->debug = false; // true;
         $this->old   = '';
+        
+        $this->methods = new Worker_Methods();
+        $this->methodsRemote = array();
     }
     
     /**
@@ -562,10 +579,16 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      */
     public function serve($on){
         $this->autosend = false;
+        
+        $this->addMethods($on);
+        $this->work();
+    }
+    
+    public function work(){
         while(true){
             $packet = $this->getPacketWait();
             if($packet instanceof Worker_Job){
-                $packet->call($on);
+                $packet->call($this->methods);
                 if(!($packet instanceof Worker_Job_Ignore)){
                     $this->putPacket($packet);
                 }
@@ -573,5 +596,34 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
                 echo Debug::param($packet).NL;
             }
         }
+    }
+    
+    public function getMethods(){
+        return $this->methods->getMethodNames();
+    }
+    
+    public function hasMethod($name){
+        return $this->methods->hasMethod($name);
+    }
+    
+    public function addMethod($name,$fn){
+        $this->methods->addMethod($name,$fn);
+        
+        return $this->putPacket($this->methods);
+    }
+    
+    public function addMethods($methods){
+        $this->methods->addMethods($methods);
+        
+        return $this->putPacket($this->methods);
+    }
+    
+    
+    public function hasRemoteMethod($name){
+        return isset($this->methodsRemote[$name]);
+    }
+    
+    public function getRemoteMethods(){
+        return $this->methodsRemote = array();
     }
 }

@@ -97,11 +97,11 @@ class Worker_Job{
     }
     
     /**
-     * perform current job on given object/instance
+     * perform current job on given methods object
      * 
-     * @param mixed $on instance or object to call methods on
+     * @param Worker_Methods $methods methods object to perform actual call on
      */
-    public function call($on){
+    public function call($methods){
         if(class_exists('Output_Mirror',true)){
             $r = new Output_Mirror($this->output); // mirror all output to $this->output (keep reference to $r to trigger garbage collection)
         }else{
@@ -110,10 +110,7 @@ class Worker_Job{
             
         $this->timeStart = microtime(true);
         try{
-            if(!is_callable(array($on,$this->callee))){
-                throw new Worker_Exception('Given method not callable');
-            }
-            $this->return = call_user_func_array(array($on,$this->callee),$this->arguments);
+            $this->return = $this->methods->call($this->callee,$this->arguments);
         }
         catch(Exception $e){
             $this->exception = $e;
