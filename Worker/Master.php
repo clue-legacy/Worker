@@ -58,11 +58,9 @@ class Worker_Master{
         $that = $this;
         
         $this->stream->addEvent('clientConnect',function($socket) use ($that){
-            $slave = $that->addSlave(new Worker_Slave_Stream($socket));
-        
             echo NL.'SLAVE CONNECTED:'.NL.Debug::param($slave).NL;
             
-            $that->events->fireEvent('slaveConnect',$slave);
+            $slave = $that->addSlave(new Worker_Slave_Stream($socket));
         });
         
         $this->stream->addEvent('clientDisconnect',function($slave) use ($that){
@@ -99,6 +97,9 @@ class Worker_Master{
         }
         $slave->setAutosend(false);
         $this->stream->addClient($slave);
+        
+        $this->events->fireEvent('slaveConnect',$slave);
+        
         return $slave;
     }
     
