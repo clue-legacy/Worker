@@ -19,6 +19,8 @@ class Worker_Protocol{
     
     protected $receiving = '';
     
+    protected $debug = false;
+    
     public function setMaxlength($length){
         $this->maxlength = $length;
         return $this;
