@@ -1,6 +1,6 @@
 <?php
 
-abstract class Worker_Slave implements Interface_Stream_Duplex{
+abstract class Worker_Slave{
     /**
      * chunk to read at once
      * 
@@ -307,15 +307,6 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     }
     
     /**
-     * returns whether there's unsent outgoing data remaining
-     * 
-     * @return boolean
-     */
-    public function hasStreamOutgoing(){
-        return ($this->sending !== '');
-    }
-    
-    /**
      * actually send outgoing buffer to worker stream
      * 
      * @throws Worker_Exception on error
@@ -352,9 +343,12 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     /**
      * get stream to write to
      * 
-     * @return resource
+     * @return resource|NULL
      */
     public function getStreamSend(){
+        if($this->sending === ''){
+            return NULL;
+        }
         return $this->wstream;
     }
     
