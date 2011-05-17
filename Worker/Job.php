@@ -113,6 +113,11 @@ class Worker_Job{
             $this->return = $methods->call($this->callee,$this->arguments);
         }
         catch(Exception $e){
+            $r = new ReflectionObject($e);                                      // hide exception trace
+            $p = $r->getProperty('trace');                                      // do not reveal to much local information
+            $p->setAccessible(true);                                            // also, trace may include unserializable data (closure arguments, etc.)
+            $p->setValue($e,'[HIDDEN]');
+            
             $this->exception = $e;
         }
         $this->timeEnd = microtime(true);

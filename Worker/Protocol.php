@@ -31,9 +31,6 @@ class Worker_Protocol{
     }
     
     public function marshall($data){
-        if($data instanceof Exception){
-            $data = new Exception($data->getMessage(),$data->getCode());
-        }
         try{
             return self::STX.$this->pack($data).self::ETX;
         }
