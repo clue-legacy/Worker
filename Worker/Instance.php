@@ -11,6 +11,8 @@ class Worker_Instance extends Worker_Master{
     
     /**
      * instanciate new worker server or client
+     * 
+     * @uses Worker_Master::addEvent() to automatically attach global methods for each connected slave
      */
     public function __construct(){
         parent::__construct();
@@ -28,6 +30,7 @@ class Worker_Instance extends Worker_Master{
      * 
      * @param string $method
      * @return array
+     * @uses Worker_Slave::hasRemoteMethod()
      */
     public function getRemoteMethodSlaves($method){
         $ret = array();
@@ -45,6 +48,8 @@ class Worker_Instance extends Worker_Master{
      * @param string $method
      * @return Worker_Slave
      * @throws Exception when no slave was found
+     * @uses Worker_Instance::getRemoteMethodSlaves()
+     * @uses shuffle()
      */
     public function getRemoteMethodSlave($method){
         $slaves = $this->getRemoteMethodSlaves($method);
@@ -59,6 +64,7 @@ class Worker_Instance extends Worker_Master{
      * get array of remote methods names
      * 
      * @return array
+     * @uses Worker_Slave::getRemoteMethods()
      */
     public function getRemoteMethods(){
         $ret = array();
@@ -73,6 +79,7 @@ class Worker_Instance extends Worker_Master{
      * 
      * @param string $method
      * @return boolean
+     * @uses Worker_Slave::hasRemoteMethod()
      */
     public function hasRemoteMethod($method){
         foreach($this->getSlaves() as $slave){
@@ -98,6 +105,13 @@ class Worker_Instance extends Worker_Master{
         return new Worker_Proxy_Block($this);
     }
     
+    /**
+     * add new server
+     * 
+     * @param string|int $server
+     * @return Worker_Instance $this (chainable)
+     * @uses Worker_Master::addSlave()
+     */
     public function addServer($server){
         $this->addSlave(new Worker_Slave_Stream($server));
         return $this;
@@ -109,13 +123,14 @@ class Worker_Instance extends Worker_Master{
      * @param string   $name
      * @param callback $fn
      * @return Worker_Instance $this (chainable)
+     * @uses Worker_Methods::addMethod()
      * @uses Worker_Slave::hasMethod()
      * @uses Worker_Slave::addMethod()
      */
     public function addMethod($name,$fn){
         $this->methods->addMethod($name,$fn);
         
-        foreach($this->getSlaves() as $slave){
+        foreach($this->getSlaves() as $slave){                                  // forward method to all clients
             if(!$slave->hasMethod($name)){
                 $slave->addMethod($name,$fn);
             }
@@ -123,10 +138,19 @@ class Worker_Instance extends Worker_Master{
         return $this;
     }
     
+    /**
+     * add new global methods to be offered to all clients
+     * 
+     * @param mixed $methods
+     * @return Worker_Instance $this (chainable)
+     * @uses Worker_Methods::addMethods()
+     * @uses Worker_Slave::hasMethod()
+     * @uses Worker_Slave::addMethod()
+     */
     public function addMethods($methods){
         $methods = $this->methods->addMethods($methods);
-         
-        foreach($methods as $name=>$fn){
+        
+    	foreach($methods as $name=>$fn){
             if(!$slave->hasMethod($name)){
                 $slave->addMethod($name,$fn);
             }
@@ -134,6 +158,11 @@ class Worker_Instance extends Worker_Master{
         return $this;
     }
     
+    /**
+     * get methods instance
+     * 
+     * @return Worker_Methods
+     */
     public function getMethodsInstance(){
         return $this->methods;
     }
@@ -142,6 +171,7 @@ class Worker_Instance extends Worker_Master{
      * get array of global method names offered to clients 
      * 
      * @return array
+     * @uses Worker_Methods::getMethodNames()
      */
     public function getMethodsNames(){
         return $this->methods->getMethodNames();

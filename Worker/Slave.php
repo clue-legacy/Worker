@@ -512,12 +512,12 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
     }
     
     /**
-     * start listening for jobs on given object
+     * DEPRECATED! start listening for jobs on given object
      * 
      * @param mixed $on instance or object to call methods on
-     * @uses Worker_Slave::getPacketWait() to wait for new job
-     * @uses Worker_Job::call() to execute job
-     * @uses Worker_Slave::putPacket() to send back results
+     * @deprecated use work() instead
+     * @uses Worker_Slave::addMethods()
+     * @uses Worker_Slave::work()
      */
     public function serve($on){
         $this->autosend = false;
@@ -526,6 +526,13 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         $this->work();
     }
     
+    /**
+     * start listening for jobs on current methods
+     * 
+     * @uses Worker_Slave::getPacketWait() to wait for new job
+     * @uses Worker_Job::call() to execute job
+     * @uses Worker_Slave::putPacket() to send back results
+     */
     public function work(){
         while(true){
             $packet = $this->getPacketWait();
@@ -540,20 +547,52 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         }
     }
     
+    /**
+     * get array of method names
+     * 
+     * @return array
+     * @uses Worker_Methods::getMethodNames()
+     */
     public function getMethods(){
         return $this->methods->getMethodNames();
     }
     
+    /**
+     * check whether client offers the given method
+     * 
+     * @param string $name
+     * @return boolean
+     * @uses Worker_Methods::hasMethod()
+     */
     public function hasMethod($name){
         return $this->methods->hasMethod($name);
     }
     
+    /**
+     * add new method to be offered to the other side
+     * 
+     * @param string   $name
+     * @param callback $fn
+     * @return Worker_Slave $this (chainable)
+     * @uses Worker_Methods::addMethod()
+     * @uses Worker_Methods::toPacket()
+     * @uses Worker_Slave::putPacket()
+     */
     public function addMethod($name,$fn){
         $this->methods->addMethod($name,$fn);
         
         return $this->putPacket($this->methods->toPacket());
     }
     
+    /**
+     * add new methods to be offered to the other side
+     * 
+     * @param mixed $methods
+     * @return Worker_Slave $this (chainable)
+     * @uses Worker_Methods::addMethods()
+     * @uses Worker_Methods::toPacket()
+     * @uses Worker_Slave::putPacket()
+     */
     public function addMethods($methods){
         if($ret = $this->methods->addMethods($methods)){
             //Debug::backtrace();
@@ -563,11 +602,21 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
         return $this;
     }
     
-    
+    /**
+     * checks whether this client known the given remote method
+     * 
+     * @param string $name
+     * @return boolean
+     */
     public function hasRemoteMethod($name){
         return in_array($name,$this->methodsRemote,true);
     }
     
+    /**
+     * get array of remote method names offered to this client
+     * 
+     * @return array
+     */
     public function getRemoteMethods(){
         return $this->methodsRemote;
     }
