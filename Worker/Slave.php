@@ -594,9 +594,7 @@ abstract class Worker_Slave implements Interface_Stream_Duplex{
      * @uses Worker_Slave::putPacket()
      */
     public function addMethods($methods){
-        if($ret = $this->methods->addMethods($methods)){
-            //Debug::backtrace();
-            Debug::dump($ret,$methods);
+        if($this->methods->addMethods($methods)){                               // only pack if something actually changed
             $this->putPacket($this->methods->toPacket());
         }
         return $this;

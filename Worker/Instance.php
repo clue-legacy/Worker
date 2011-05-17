@@ -145,14 +145,22 @@ class Worker_Instance extends Worker_Master{
      * @return Worker_Instance $this (chainable)
      * @uses Worker_Methods::addMethods()
      * @uses Worker_Slave::hasMethod()
-     * @uses Worker_Slave::addMethod()
+     * @uses Worker_Slave::addMethods()
      */
     public function addMethods($methods){
         $methods = $this->methods->addMethods($methods);
         
-    	foreach($methods as $name=>$fn){
-            if(!$slave->hasMethod($name)){
-                $slave->addMethod($name,$fn);
+        if($methods){
+            foreach($this->getSlaves() as $slave){                              // for each client:
+                $new = array();                                                 //   build array of new methods
+                foreach($methods as $name=>$fn){
+                    if(!$slave->hasMethod($name)){
+                        $new[$name] = $fn;
+                    }
+                }
+                if($new){
+                    $slave->addMethods($new);                                   // only add new ones
+                }
             }
         }
         return $this;
