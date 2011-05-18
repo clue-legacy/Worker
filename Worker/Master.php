@@ -30,6 +30,20 @@ class Worker_Master{
     protected $debug;
     
     /**
+     * stream handler
+     * 
+     * @var Stream_Master_Standalone
+     */
+    protected $stream;
+    
+    /**
+     * event handler
+     * 
+     * @var EventEmitter
+     */
+    protected $events;
+    
+    /**
      * connect to master and return new slave instance
      * 
      * @param string|NULL $address address to connect to
@@ -56,17 +70,31 @@ class Worker_Master{
         $this->events = new EventEmitter();
         
         $that = $this;
-        
-        $this->stream->addEvent('clientConnect',function($socket) use ($that){
+        $this->stream->addEvent('clientConnect',function($stream) use ($that){
             // echo NL.'SLAVE CONNECTED:'.NL.Debug::param($socket).NL;
             
-            $that->addSlave(new Worker_Slave_Stream($socket));
+            $that->addSlave(new Worker_Slave_Stream($stream));
         });
-        
-        $this->stream->addEvent('clientDisconnect',function($slave) use ($that){
+        $this->stream->addEvent('clientDisconnect',function(Worker_Slave $slave) use ($that){
             echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
             
             $that->events->fireEvent('slaveDisconnect',$slave);
+        });
+        $this->stream->addEvent('clientRead',function(Worker_Slave $slave){
+            try{
+                $slave->streamReceive();
+            }
+            catch(Worker_Disconnect_Exception $e){
+                throw new Stream_Master_Exception();
+            }
+        });
+        $this->stream->addEvent('clientWrite',function(Worker_Slave $slave){
+            try{
+                $slave->streamSend();
+            }
+            catch(Worker_Disconnect_Exception $e){
+                throw new Stream_Master_Exception();
+            }
         });
     }
     
