@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * 
+ * 
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/mit-license MIT License
+ * @package Worker
+ * @version v0.0.1
+ * @link https://github.com/clue/Worker
+ */
 class Worker_Instance extends Worker_Master{
     
     /**
@@ -20,7 +30,7 @@ class Worker_Instance extends Worker_Master{
         $this->methods = new Worker_Methods();
         
         $that = $this;
-        $this->addEvent('slaveConnect',function($slave) use ($that){
+        $this->addEvent('slaveConnect',function(Worker_Slave $slave) use ($that){
             $slave->addMethods($that->getMethodsInstance());                    // send each global method to slave
         });
     }

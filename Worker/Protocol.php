@@ -1,5 +1,15 @@
 <?php
 
+/**
+ * helper class used to wrap protocol information and packet marshalling
+ * 
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/mit-license MIT License
+ * @package Worker
+ * @version v0.0.1
+ * @link https://github.com/clue/Worker
+ */
 class Worker_Protocol{
     /**
      * packet start identifier
