@@ -85,10 +85,11 @@ class Worker_Master{
             
             $that->addSlave(new Worker_Slave_Stream($stream));
         });
-        $this->stream->addEvent('clientDisconnect',function(Worker_Slave $slave) use ($that){
+        $events = $this->events;
+        $this->stream->addEvent('clientDisconnect',function(Worker_Slave $slave) use ($events){
             echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
             
-            $that->events->fireEvent('slaveDisconnect',$slave);
+            $events->fireEvent('slaveDisconnect',$slave);
         });
         $this->stream->addEvent('clientRead',function(Worker_Slave $slave){
             try{
