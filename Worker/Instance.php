@@ -28,10 +28,17 @@ class Worker_Instance extends Worker_Master{
         parent::__construct();
         
         $this->methods = new Worker_Methods();
+        $this->addEvent('slaveConnect',array($this,'onSlaveConnect'));
     }
     
+    /**
+     * event handler: called when a new slave connects (MUST NOT be called manually!)
+     * 
+     * @param Worker_Slave $slave
+     * @uses Worker_Slave::addMethods() to automatically attach global methods to newly connection slave
+     */
     public function onSlaveConnect(Worker_Slave $slave){
-        $slave->addMethods($this->getMethodsInstance());                        // send each global method to slave
+        $slave->addMethods($this->methods);
     }
     
     /**
@@ -52,7 +59,7 @@ class Worker_Instance extends Worker_Master{
     }
     
     /**
-     * get slave for given remote method
+     * get random slave for given remote method
      * 
      * @param string $method
      * @return Worker_Slave
@@ -78,7 +85,7 @@ class Worker_Instance extends Worker_Master{
     public function getRemoteMethods(){
         $ret = array();
         foreach($this->getSlaves() as $slave){
-            $ret += $slave->getRemoteMethods();
+            $ret = array_merge($ret,$slave->getRemoteMethods());
         }
         return array_unique($ret);
     }
@@ -104,6 +111,8 @@ class Worker_Instance extends Worker_Master{
      * 
      * @param string $method
      * @return mixed
+     * @uses Worker_Instance::getRemoteMethodSlave()
+     * @uses Worker_Slave::call()
      */
     public function call($method){
         $slave = $this->getRemoteMethodSlave($method);
@@ -176,21 +185,12 @@ class Worker_Instance extends Worker_Master{
     }
     
     /**
-     * get methods instance
-     * 
-     * @return Worker_Methods
-     */
-    public function getMethodsInstance(){
-        return $this->methods;
-    }
-    
-    /**
      * get array of global method names offered to clients 
      * 
      * @return array
      * @uses Worker_Methods::getMethodNames()
      */
-    public function getMethodsNames(){
+    public function getMethodNames(){
         return $this->methods->getMethodNames();
     }
 }
