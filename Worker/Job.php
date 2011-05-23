@@ -101,7 +101,7 @@ class Worker_Job{
      * @param Worker_Methods $methods methods object to perform actual call on
      */
     public function call($methods){
-        if(class_exists('Output_Mirror',true)){
+        if(PHP_VERSION >= 5.3 && class_exists('Output_Mirror',true)){
             $r = new Output_Mirror($this->output); // mirror all output to $this->output (keep reference to $r to trigger garbage collection)
         }else{
             ob_start();
