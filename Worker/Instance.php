@@ -28,7 +28,7 @@ class Worker_Instance extends Worker_Master{
         parent::__construct();
         
         $this->methods = new Worker_Methods();
-        $this->addEvent('slaveConnect',array($this,'onSlaveConnect'));
+        $this->addEvent('slaveConnect',array($this,'onSlaveConnectMethods'));
     }
     
     /**
@@ -37,7 +37,7 @@ class Worker_Instance extends Worker_Master{
      * @param Worker_Slave $slave
      * @uses Worker_Slave::addMethods() to automatically attach global methods to newly connection slave
      */
-    public function onSlaveConnect(Worker_Slave $slave){
+    public function onSlaveConnectMethods(Worker_Slave $slave){
         $slave->addMethods($this->methods);
     }
     

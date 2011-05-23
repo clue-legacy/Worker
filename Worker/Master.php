@@ -75,26 +75,34 @@ class Worker_Master{
         $this->go    = false;
         $this->debug = false; //true;
         
-        $this->stream = new Stream_Master_Standalone();
+        
         
         $this->events = new EventEmitter();
-        $this->events->addEvent('clientConnect',array($this,'onClientConnect'));
-        $this->events->addEvent('clientDisconnect',array($this,'onClientDisconnect'));
-        $this->stream->addEvent('clientRead',array($this,'onClientRead'));
-        $this->stream->addEvent('clientWrite',array($this,'onClientWrite'));
+        $this->events->addEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
+        $this->events->addEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
+        
+        $this->stream = new Stream_Master_Standalone();
+        $this->stream->addEvent('clientConnect',array($this,'onClientConnectForward'));
+        $this->stream->addEvent('clientDisconnect',array($this,'onClientDisconnectForward'));
+        $this->stream->addEvent('clientRead',array($this,'onClientReadForward'));
+        $this->stream->addEvent('clientWrite',array($this,'onClientWriteForward'));
     }
     
-    public function onClientConnect($stream){
-        // echo NL.'SLAVE CONNECTED:'.NL.Debug::param($socket).NL;
-        
+    public function onSlaveConnectEcho(Worker_Slave $slave){
+        echo NL.'SLAVE CONNECTED: '.NL.Debug::param($slave).NL;
+    }
+    
+    public function onSlaveDisconnectEcho(Worker_Slave $slave){
+        echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
+    }
+    
+    public function onClientConnectForward($stream){
         $this->addSlave(new Worker_Slave_Stream($stream));
     }
-    public function onClientDisconnect(Worker_Slave $slave){
-        echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
-        
+    public function onClientDisconnectForward(Worker_Slave $slave){
         $this->events->fireEvent('slaveDisconnect',$slave);
     }
-    public function onClientRead(Worker_Slave $slave){
+    public function onClientReadForward(Worker_Slave $slave){
         try{
             $slave->streamReceive();
         }
@@ -102,7 +110,7 @@ class Worker_Master{
             throw new Stream_Master_Exception();
         }
     }
-    public function onClientWrite(Worker_Slave $slave){
+    public function onClientWriteForward(Worker_Slave $slave){
         try{
             $slave->streamSend();
         }
