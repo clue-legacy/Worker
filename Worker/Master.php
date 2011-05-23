@@ -78,35 +78,37 @@ class Worker_Master{
         $this->stream = new Stream_Master_Standalone();
         
         $this->events = new EventEmitter();
+        $this->events->addEvent('clientConnect',array($this,'onClientConnect'));
+        $this->events->addEvent('clientDisconnect',array($this,'onClientDisconnect'));
+        $this->stream->addEvent('clientRead',array($this,'onClientRead'));
+        $this->stream->addEvent('clientWrite',array($this,'onClientWrite'));
+    }
+    
+    public function onClientConnect($stream){
+        // echo NL.'SLAVE CONNECTED:'.NL.Debug::param($socket).NL;
         
-        $that = $this;
-        $this->stream->addEvent('clientConnect',function($stream) use ($that){
-            // echo NL.'SLAVE CONNECTED:'.NL.Debug::param($socket).NL;
-            
-            $that->addSlave(new Worker_Slave_Stream($stream));
-        });
-        $events = $this->events;
-        $this->stream->addEvent('clientDisconnect',function(Worker_Slave $slave) use ($events){
-            echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
-            
-            $events->fireEvent('slaveDisconnect',$slave);
-        });
-        $this->stream->addEvent('clientRead',function(Worker_Slave $slave){
-            try{
-                $slave->streamReceive();
-            }
-            catch(Worker_Disconnect_Exception $e){
-                throw new Stream_Master_Exception();
-            }
-        });
-        $this->stream->addEvent('clientWrite',function(Worker_Slave $slave){
-            try{
-                $slave->streamSend();
-            }
-            catch(Worker_Disconnect_Exception $e){
-                throw new Stream_Master_Exception();
-            }
-        });
+        $this->addSlave(new Worker_Slave_Stream($stream));
+    }
+    public function onClientDisconnect(Worker_Slave $slave){
+        echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
+        
+        $this->events->fireEvent('slaveDisconnect',$slave);
+    }
+    public function onClientRead(Worker_Slave $slave){
+        try{
+            $slave->streamReceive();
+        }
+        catch(Worker_Disconnect_Exception $e){
+            throw new Stream_Master_Exception();
+        }
+    }
+    public function onClientWrite(Worker_Slave $slave){
+        try{
+            $slave->streamSend();
+        }
+        catch(Worker_Disconnect_Exception $e){
+            throw new Stream_Master_Exception();
+        }
     }
     
     /**

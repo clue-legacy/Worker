@@ -28,11 +28,10 @@ class Worker_Instance extends Worker_Master{
         parent::__construct();
         
         $this->methods = new Worker_Methods();
-        
-        $that = $this;
-        $this->addEvent('slaveConnect',function(Worker_Slave $slave) use ($that){
-            $slave->addMethods($that->getMethodsInstance());                    // send each global method to slave
-        });
+    }
+    
+    public function onSlaveConnect(Worker_Slave $slave){
+        $slave->addMethods($this->getMethodsInstance());                        // send each global method to slave
     }
     
     /**
