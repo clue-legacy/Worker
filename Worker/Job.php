@@ -99,6 +99,9 @@ class Worker_Job{
      * perform current job on given methods object
      * 
      * @param Worker_Methods $methods methods object to perform actual call on
+     * @uses Output_Mirror to mirror output to job output variable
+     * @uses Worker_Methods::call() to actually call the method
+     * @uses ReflectionObject to remove stack trace from exceptions
      */
     public function call($methods){
         if(PHP_VERSION >= 5.3 && class_exists('Output_Mirror',true)){

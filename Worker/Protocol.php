@@ -25,21 +25,54 @@ class Worker_Protocol{
      */
     const ETX = "\x03";
     
+    /**
+     * maximum incoming buffer length
+     * 
+     * @var int|NULL number of bytes (NULL=infinite)
+     */
     protected $maxlength = NULL;
     
+    /**
+     * incoming/receiving buffer
+     * 
+     * @var string
+     */
     protected $receiving = '';
     
+    /**
+     * whether to print protocol debug messages
+     * 
+     * @var boolean
+     */
     protected $debug = false;
     
+    /**
+     * set incoming buffer length
+     * 
+     * @param int|NULL $length length in bytes (NULL=infinite)
+     * @return Worker_Protocol $this (chainable)
+     */
     public function setMaxlength($length){
         $this->maxlength = $length;
         return $this;
     }
     
+    /**
+     * pack given data and return packet contents (no envelope!)
+     * 
+     * @param mixed $data
+     * @return string
+     */
     protected function pack($data){
         return serialize($data);
     }
     
+    /**
+     * pack given data and return new packet
+     * 
+     * @param mixed $data
+     * @return string packet
+     */
     public function marshall($data){
         try{
             return self::STX.$this->pack($data).self::ETX;
@@ -50,6 +83,11 @@ class Worker_Protocol{
         }
     }
     
+    /**
+     * checks whether there is a finished packet in the incoming buffer
+     * 
+     * @return boolean
+     */
     public function hasPacket(){
         return (strpos($this->receiving,self::ETX) !== false);
     }
@@ -84,6 +122,13 @@ class Worker_Protocol{
         return $data;
     }
     
+    /**
+     * will be called when Worker_Slave receives new data => push data to incoming buffer
+     * 
+     * @param string $buffer additional incoming data
+     * @return Worker_Protocol $this (chainable)
+     * @throws Worker_Exception on error or if buffer exceeds maximum size
+     */
     public function onData($buffer){
         if($this->receiving !== ''){                                            // already buffering, just append
             $this->receiving .= $buffer;
@@ -107,13 +152,21 @@ class Worker_Protocol{
      * put back given packet to incoming stream buffer
      * 
      * @param mixed $data
-     * @return Worker_Protocol this (chainable)
+     * @return Worker_Protocol $this (chainable)
+     * @uses Worker_Protocol::pack()
      */
     public function putBack($data){
         $this->receiving = $this->pack($data).self::ETX.(($this->receiving === '') ? '' : (self::STX.$this->receiving));
         return $this;
     }
     
+    /**
+     * push back multiple packets to incoming stream buffer
+     * 
+     * @param array[mixed] $packets
+     * @return Worker_Protocol $this (chainable)
+     * @uses Worker_Protocol::putBack()
+     */
     public function putBacks($packets){
         foreach(array_reverse($packets) as $packet){
             $this->putBack($packet);
