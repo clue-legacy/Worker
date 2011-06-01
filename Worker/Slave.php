@@ -557,7 +557,7 @@ abstract class Worker_Slave{
      * @return array
      * @uses Worker_Methods::getMethodNames()
      */
-    public function getMethods(){
+    public function getMethodNames(){
         return $this->methods->getMethodNames();
     }
     
