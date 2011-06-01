@@ -37,21 +37,21 @@ class Worker_Job{
      * 
      * @var string
      */
-    protected $output;
+    protected $output = '';
     
     /**
      * function return code
      * 
      * @var mixed
      */
-    protected $return;
+    protected $return = NULL;
     
     /**
-     * exception thrown during execution of function
+     * exception thrown during execution of function (if any)
      * 
      * @var NULL|Exception
      */
-    protected $exception;
+    protected $exception = NULL;
     
     /**
      * time job was created on
@@ -63,16 +63,16 @@ class Worker_Job{
     /**
      * time job was started on
      * 
-     * @var float
+     * @var float|NULL
      */
-    protected $timeStart;
+    protected $timeStart = NULL;
     
     /**
      * time job was ended on
      * 
-     * @var float
+     * @var float|NULL
      */
-    protected $timeEnd;
+    protected $timeEnd = NULL;
     
     /**
      * instanciate new exception
@@ -85,14 +85,8 @@ class Worker_Job{
         $this->arguments = $arguments;
         
         $this->handle = mt_rand();
-        
-        $this->output    = '';
-        $this->return    = NULL;
-        $this->exception = NULL;
-        
+       
         $this->timeCreate = microtime(true);
-        $this->timeStart  = NULL;
-        $this->timeEnd    = NULL;
     }
     
     /**

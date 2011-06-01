@@ -30,7 +30,7 @@ abstract class Worker_Slave{
      * 
      * @var string
      */
-    private $sending;
+    private $sending = '';
     
     /**
      * stream to read from
@@ -51,28 +51,28 @@ abstract class Worker_Slave{
      * 
      * @var array
      */
-    private $vars;
+    private $vars = array();
     
     /**
      * proxies waiting for job results
      * 
      * @var array[Worker_Proxy]
      */
-    private $proxies;
+    private $proxies = array();
     
     /**
      * whether to automatically send data when calling putPacket()
      * 
      * @var boolean
      */
-    protected $autosend;
+    protected $autosend = true;
     
     /**
      * debugging on/of
      * 
      * @var boolean
      */
-    protected $debug;
+    protected $debug = false; // true;
     
     /**
      * keeps track of methods offered to the other side
@@ -86,7 +86,7 @@ abstract class Worker_Slave{
      * 
      * @var array
      */
-    protected $methodsRemote;
+    protected $methodsRemote = array();
     
     /**
      * protocol handler instance
@@ -96,17 +96,10 @@ abstract class Worker_Slave{
     protected $protocol;
     
     public function __construct($rstream,$wstream){
-        $this->sending   = '';
-        $this->rstream   = $rstream;
-        $this->wstream   = $wstream;
-        $this->vars      = array();
-        $this->proxies   = array();
-        $this->autosend  = true;
-        
-        $this->debug = false; // true;
+        $this->rstream = $rstream;
+        $this->wstream = $wstream;
         
         $this->methods = new Worker_Methods();
-        $this->methodsRemote = array();
         
         $this->protocol = new Worker_Protocol();
         $this->protocol->setMaxlength(self::BUFFER_MAX);

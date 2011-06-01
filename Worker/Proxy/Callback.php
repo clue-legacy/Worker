@@ -16,9 +16,9 @@ class Worker_Proxy_Callback extends Worker_Proxy{
     /**
      * array of jobs to process
      * 
-     * @var Worker_Job
+     * @var array[Worker_Job]
      */
-    protected $jobs;
+    protected $jobs = array();
     
     /**
      * instanciate new callback proxy
@@ -32,8 +32,6 @@ class Worker_Proxy_Callback extends Worker_Proxy{
         }
         parent::__construct($slave);
         $this->callback = $callback;
-        
-        $this->jobs  = array();
     }
     
     public function handleJob($job){
