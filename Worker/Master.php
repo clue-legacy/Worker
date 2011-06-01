@@ -23,21 +23,21 @@ class Worker_Master{
      * 
      * @var array[Worker_Task]
      */
-    protected $tasks;
+    protected $tasks = array();
     
     /**
      * whether we're supposed to stay in our main loop
      * 
      * @var boolean
      */
-    protected $go;
+    protected $go = false;
     
     /**
      * debugging flag
      * 
      * @var boolean
      */
-    protected $debug;
+    protected $debug = false; // true;
     
     /**
      * stream handler
@@ -70,13 +70,6 @@ class Worker_Master{
      * instanciate new master
      */
     public function __construct(){
-        $this->tasks  = array();
-        
-        $this->go    = false;
-        $this->debug = false; //true;
-        
-        
-        
         $this->events = new EventEmitter();
         $this->events->addEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
         $this->events->addEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
@@ -96,26 +89,39 @@ class Worker_Master{
         echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
     }
     
-    public function onClientConnectForward($stream){
-        $this->addSlave(new Worker_Slave_Stream($stream));
+    public function onClientConnectForward(Stream_Master_Client $client){
+        //Debug::dump($client,'Connected');
+        //throw new Stream_Master_Exception();
+        
+        $this->stream->removeClient($client);
+        $this->addSlave(new Worker_Slave_Stream($client->getNative()));
     }
-    public function onClientDisconnectForward(Worker_Slave $slave){
-        $this->events->fireEvent('slaveDisconnect',$slave);
-    }
-    public function onClientReadForward(Worker_Slave $slave){
-        try{
-            $slave->streamReceive();
-        }
-        catch(Worker_Disconnect_Exception $e){
-            throw new Stream_Master_Exception();
+    public function onClientDisconnectForward(Stream_Master_Client $slave){
+        $slave = $slave->getNative();
+        if($slave instanceof Worker_Slave){
+            $this->events->fireEvent('slaveDisconnect',$slave);
         }
     }
-    public function onClientWriteForward(Worker_Slave $slave){
-        try{
-            $slave->streamSend();
+    public function onClientReadForward(Stream_Master_Client $slave){
+        $slave = $slave->getNative();
+        if($slave instanceof Worker_Slave){
+            try{
+                $slave->streamReceive();
+            }
+            catch(Worker_Disconnect_Exception $e){
+                throw new Stream_Master_Exception();
+            }
         }
-        catch(Worker_Disconnect_Exception $e){
-            throw new Stream_Master_Exception();
+    }
+    public function onClientWriteForward(Stream_Master_Client $slave){
+        $slave = $slave->getNative();
+        if($slave instanceof Worker_Slave){
+            try{
+                $slave->streamSend();
+            }
+            catch(Worker_Disconnect_Exception $e){
+                throw new Stream_Master_Exception();
+            }
         }
     }
     
@@ -123,14 +129,7 @@ class Worker_Master{
      * destruct master (clean up all streams)
      */
     public function __destruct(){
-        foreach($this->stream->getClients() as $slave){
-            $slave->close();
-        }
-        
-        foreach($this->stream->getPorts() as $port){
-            fclose($port);
-        }
-        
+        $this->stream->close();
         $this->stream = NULL;
     }
     
@@ -155,10 +154,17 @@ class Worker_Master{
     /**
      * return all worker slaves
      * 
-     * @return array
+     * @return array[Worker_Slave]
      */
     public function getSlaves(){
-        return $this->stream->getClients();
+        $slaves = array();
+        foreach($this->stream->getClients() as $id=>$slave){
+            $slave = $slave->getNative();
+            if($slave instanceof Worker_Slave){
+                $slaves[$id] = $slave;
+            }
+        }
+        return $slaves;
     }
     
     /**
