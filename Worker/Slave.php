@@ -77,9 +77,9 @@ abstract class Worker_Slave{
     /**
      * keeps track of methods offered to the other side
      * 
-     * @var Worker_Methods
+     * @var Worker_Methods|NULL
      */
-    protected $methods;
+    protected $methods = NULL;
     
     /**
      * keeps track of remote methods callable
@@ -98,8 +98,6 @@ abstract class Worker_Slave{
     public function __construct($rstream,$wstream){
         $this->rstream = $rstream;
         $this->wstream = $wstream;
-        
-        $this->methods = new Worker_Methods();
         
         $this->protocol = new Worker_Protocol();
         $this->protocol->setMaxlength(self::BUFFER_MAX);
@@ -489,6 +487,9 @@ abstract class Worker_Slave{
         if($this->debug) Debug::notice('[Incoming job '.Debug::param($job).']');
         
         if(!$job->isStarted() /*$job->getSlaveId() === $this->id*/){
+            if($this->methods === NULL){
+                $this->methods = new Worker_Methods();
+            }
             $job->call($this->methods);
             if(!($job instanceof Worker_Job_Ignore)){
                 $this->putPacket($job);
@@ -531,6 +532,9 @@ abstract class Worker_Slave{
      * @uses Worker_Slave::putPacket() to send back results
      */
     public function work(){
+        if($this->methods === NULL){
+            $this->methods = new Worker_Methods();
+        }
         while(true){
             $packet = $this->getPacketWait();
             if($packet instanceof Worker_Job){
@@ -551,6 +555,9 @@ abstract class Worker_Slave{
      * @uses Worker_Methods::getMethodNames()
      */
     public function getMethodNames(){
+        if($this->methods === NULL){
+            return array();
+        }
         return $this->methods->getMethodNames();
     }
     
@@ -562,6 +569,9 @@ abstract class Worker_Slave{
      * @uses Worker_Methods::hasMethod()
      */
     public function hasMethod($name){
+        if($this->methods === NULL){
+            return false;
+        }
         return $this->methods->hasMethod($name);
     }
     
@@ -576,6 +586,9 @@ abstract class Worker_Slave{
      * @uses Worker_Slave::putPacket()
      */
     public function addMethod($name,$fn){
+        if($this->methods === NULL){
+            $this->methods = new Worker_Methods();
+        }
         $this->methods->addMethod($name,$fn);
         
         return $this->putPacket($this->methods->toPacket());
@@ -591,6 +604,9 @@ abstract class Worker_Slave{
      * @uses Worker_Slave::putPacket()
      */
     public function addMethods($methods){
+        if($this->methods === NULL){
+            $this->methods = new Worker_Methods();
+        }
         if($this->methods->addMethods($methods)){                               // only pack if something actually changed
             $this->putPacket($this->methods->toPacket());
         }
