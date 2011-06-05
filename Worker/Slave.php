@@ -215,47 +215,26 @@ abstract class Worker_Slave{
             return $this->getPacket();
         }
         catch(Worker_Exception $e){ }
-            
-        $ssleep = NULL;
-        $usleep = NULL;
-        if($timeout !== NULL){
-            $timeout += microtime(true);
-        }
         
-        $ignore = NULL;
-        do{                                                                     // keep waiting for complete new packet
-            $read  = array($this->rstream);
-            $write = ($this->sending === '') ? array() : array($this->wstream);
+        $master = new Stream_Master_Standalone();
+        $master->setTimeout($timeout);
+        $master->addEvent('clientWrite',function($client){
+            $client->getNative()->streamSend();
+        });
+        $master->addEvent('clientRead',function($client) use ($master){
+            $client = $client->getNative();
+            $client->streamReceive(); // try to read data, may throw an exception
             
-            if($timeout !== NULL){                                              // calculate timeout into ssleep/usleep
-                $ssleep = $timeout - microtime(true);
-                if($this->debug) Debug::notice('Wait for '.Debug::param(max($ssleep,0)).'s');
-                if($ssleep < 0){
-                    $ssleep = 0;
-                    $usleep = 0;
-                }else{
-                    $usleep = (int)(($ssleep - (int)$ssleep)*1000000);
-                    $ssleep = (int)$ssleep;
-                }
-            }else if($this->debug) Debug::notice('Wait forever');
-            $ret = stream_select($read,$write,$ignore,$ssleep,$usleep);         // wait for incoming/outgoing stream
-            if($ret === false){
-                throw new Worker_Exception('stream_select() failed');
+            try{
+                $master->stop($client->getPacket());                            // try to get packet
             }
-            if($write){
-                $this->streamSend();
-            }
-            if($read){
-                $this->streamReceive();                                         // receive data and try again
-                
-                try{                                                            // try to get packet
-                    return $this->getPacket();
-                }
-                catch(Worker_Exception $e){ }                                   // ignore errors in case packet is not complete
-            }
-        }while($timeout === NULL || $timeout > microtime(true));                // retry until timeout is reached
-        
-        throw new Worker_Timeout_Exception('Timeout');
+            catch(Exception $e){ }                                              // ignore errors in case packet is not complete
+        });
+        $master->addEvent('timeout',function(){
+            throw new Worker_Timeout_Exception('Timeout');
+        });
+        $master->addClient($this);
+        return $master->start();
     }
     
     /**
@@ -337,7 +316,7 @@ abstract class Worker_Slave{
      * 
      * @return resource
      */
-    public function getStreamReceive(){
+    public function getStreamRead(){
         return $this->rstream;
     }
     
@@ -346,7 +325,7 @@ abstract class Worker_Slave{
      * 
      * @return resource|NULL
      */
-    public function getStreamSend(){
+    public function getStreamWrite(){
         if($this->sending === ''){
             return NULL;
         }
