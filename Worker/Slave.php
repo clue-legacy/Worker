@@ -232,7 +232,7 @@ abstract class Worker_Slave{
             catch(Exception $e){ }                                              // ignore errors in case packet is not complete
         });
         $master->addEvent('timeout',function(){
-            throw new Worker_Timeout_Exception('Timeout');
+            throw new Worker_Exception_Timeout('Timeout');
         });
         $master->addClient($this);
         return $master->start();
@@ -252,8 +252,7 @@ abstract class Worker_Slave{
             throw new Worker_Exception('Unable to read data from stream');
         }
         if($buffer === ''){
-            new Worker_Exception(); // TODO: temporary workaround
-            throw new Worker_Disconnect_Exception('No data read, stream closed?');
+            throw new Worker_Exception_Disconnect('No data read, stream closed?');
         }
         
         //if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
@@ -300,7 +299,7 @@ abstract class Worker_Slave{
             throw new Worker_Exception('Unable to write data to stream');
         }
         if($bytes === 0){
-            throw new Worker_Disconnect_Exception('Nothing sent, stream closed?');
+            throw new Worker_Exception_Disconnect('Nothing sent, stream closed?');
         }
         if($this->debug) echo '[Sent '.Debug::param($bytes).' B: '.Debug::param(substr($this->sending,0,$bytes)).']';
         if($bytes == strlen($this->sending)){

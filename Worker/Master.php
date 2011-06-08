@@ -108,7 +108,7 @@ class Worker_Master{
             try{
                 $slave->streamReceive();
             }
-            catch(Worker_Disconnect_Exception $e){
+            catch(Worker_Exception_Disconnect $e){
                 throw new Stream_Master_Exception();
             }
         }
@@ -119,7 +119,7 @@ class Worker_Master{
             try{
                 $slave->streamSend();
             }
-            catch(Worker_Disconnect_Exception $e){
+            catch(Worker_Exception_Disconnect $e){
                 throw new Stream_Master_Exception();
             }
         }
@@ -258,7 +258,7 @@ class Worker_Master{
             $this->waitData($timeout);
             
             if($timeout !== NULL && microtime(true) > $timeout && !$this->hasPacket()){
-                throw new Worker_Timeout_Exception('Timeout');
+                throw new Worker_Exception_Timeout('Timeout');
             }
         }
         return $this;
