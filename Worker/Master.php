@@ -291,11 +291,12 @@ class Worker_Master{
     }
     
     /**
-     * wait for data (or timeout) once
+     * get timestamp of next task timeout
      * 
-     * @param float|NULL $timeout maximum timeout (timestamp!)
+     * @param float|NULL $timeout maximum timeout
+     * @return float|NULL
      */
-    protected function waitData($timeout = NULL){
+    protected function getTaskTimeout($timeout=NULL){
         foreach($this->tasks as $task){                                         // cycle through tasks in order to determine timeout
             if($task->isActive()){
                 $t = $task->getTimeout();
@@ -304,6 +305,16 @@ class Worker_Master{
                 }
             }
         }
+        return $timeout;
+    }
+    
+    /**
+     * wait for data (or timeout) once
+     * 
+     * @param float|NULL $timeout maximum timeout (timestamp!)
+     */
+    protected function waitData($timeout = NULL){
+        $timeout = $this->getTaskTimeout($timeout);
         if($timeout !== NULL){                                                  // calculate timeout into ssleep/usleep
             $timeout = $timeout - microtime(true);
             if($timeout < 0){
