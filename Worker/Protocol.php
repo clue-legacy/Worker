@@ -57,6 +57,11 @@ class Worker_Protocol{
         return $this;
     }
     
+    public function setDebug($toggle){
+        $this->debug = !!$toggle;
+        return $this;
+    }
+    
     /**
      * pack given data and return packet contents (no envelope!)
      * 

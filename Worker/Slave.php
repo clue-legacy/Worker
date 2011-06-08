@@ -100,7 +100,7 @@ abstract class Worker_Slave{
         $this->wstream = $wstream;
         
         $this->protocol = new Worker_Protocol();
-        $this->protocol->setMaxlength(self::BUFFER_MAX);
+        $this->protocol->setMaxlength(self::BUFFER_MAX)->setDebug($this->debug);
     }
     
     /**
@@ -122,6 +122,7 @@ abstract class Worker_Slave{
      */
     public function setDebug($toggle){
         $this->debug = (bool)$toggle;
+        $this->protocol->setDebug($toggle);
         return $this;
     }
     
@@ -255,7 +256,7 @@ abstract class Worker_Slave{
             throw new Worker_Disconnect_Exception('No data read, stream closed?');
         }
         
-        if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
+        //if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
         
         $this->protocol->onData($buffer);
         
