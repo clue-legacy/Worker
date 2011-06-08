@@ -110,9 +110,15 @@ class Worker_Job{
         }
         catch(Exception $e){
             $r = new ReflectionObject($e);                                      // hide exception trace
-            $p = $r->getProperty('trace');                                      // do not reveal to much local information
-            $p->setAccessible(true);                                            // also, trace may include unserializable data (closure arguments, etc.)
-            $p->setValue($e,'[HIDDEN]');
+            do{
+                try{
+                    $p = $r->getProperty('trace');                              // do not reveal to much local information
+                    $p->setAccessible(true);                                    // also, trace may include unserializable data (closure arguments, etc.)
+                    $p->setValue($e,array());
+                }
+                catch(Exception $ignore){ }                                     // property may not be available, continue with parent class
+                $r = $r->getParentClass();
+            }while($r);
             
             $this->exception = $e;
         }
@@ -175,7 +181,7 @@ class Worker_Job{
             echo $this->output;
         }
         if($this->exception !== NULL){
-            throw new $this->exception;
+            throw $this->exception;
         }
         return $this->return;
     }
