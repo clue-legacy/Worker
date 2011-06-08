@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Proxy_Ignore extends Worker_Proxy{
+class Worker_Proxy_Ignore extends Worker_Proxy_Background{
     public function __call($name,$args){
         $job = new Worker_Job_Ignore($name,$args);
         $this->slave->putJob($job);

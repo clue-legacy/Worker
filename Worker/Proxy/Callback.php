@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Proxy_Callback extends Worker_Proxy{
+class Worker_Proxy_Callback extends Worker_Proxy_Background{
     private $callback;
     
     /**
@@ -45,21 +45,6 @@ class Worker_Proxy_Callback extends Worker_Proxy{
             return true;
         }
         return false;
-    }
-    
-    /**
-     * magic function, transform all calls into jobs and forward to slave
-     * 
-     * @param string $name
-     * @param array  $args
-     * @return Worker_Job
-     * @uses Worker_Slave::putJob()
-     */
-    public function __call($name,$args){
-        $job = new Worker_Job($name,$args);
-        $this->jobs[] = $job;
-        $this->slave->putJob($job,$this);
-        return $job;
     }
     
     /**

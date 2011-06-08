@@ -378,6 +378,16 @@ abstract class Worker_Slave{
     }
     
     /**
+     * get new proxy interface for background jobs
+     * 
+     * @return Worker_Proxy_Background
+     * @see Worker_Proxy_Background
+     */
+    public function proxyBackground(){
+        return new Worker_Proxy_Background($this);
+    }
+    
+    /**
      * get new proxy interface waiting for methods to return (normal blocking method calls)
      * 
      * @return Worker_Proxy_Block
