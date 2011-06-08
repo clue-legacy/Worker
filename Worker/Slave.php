@@ -529,6 +529,29 @@ abstract class Worker_Slave{
     }
     
     /**
+     * start main loop, wait for packets, handle jobs
+     * 
+     * @return mixed $data
+     * @throws Worker_Exception on error
+     * @uses Stream_Master_Standalone::addClient()
+     * @uses Stream_Master_Standalone::start()
+     * @uses Worker_Slave::streamSend()
+     * @uses Worker_Slave::streamReceive()
+     */
+    public function start(){
+        $master = new Stream_Master_Standalone();
+        $master->addEvent('clientWrite',function($client){
+            $client->getNative()->streamSend();
+        });
+        $master->addEvent('clientRead',function($client){
+            $client = $client->getNative();
+            $client->streamReceive();
+        });
+        $master->addClient($this);
+        $master->start();
+    }
+    
+    /**
      * get array of method names
      * 
      * @return array
