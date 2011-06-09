@@ -161,7 +161,7 @@ abstract class Worker_Slave{
         $this->sending .= $this->protocol->marshall($data);
         
         if(strlen($this->sending) > self::BUFFER_MAX){
-            throw new Worker_Exception('Outgoing buffer size of '.Debug::param(strlen($this->sending)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
+            throw new Worker_Exception_Communication('Outgoing buffer size of '.Debug::param(strlen($this->sending)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
         }
         if($this->autosend){
             $this->streamSend();
@@ -249,7 +249,7 @@ abstract class Worker_Slave{
     public function streamReceive(){
         $buffer = fread($this->rstream,self::BUFFER_CHUNK);
         if($buffer === false){
-            throw new Worker_Exception('Unable to read data from stream');
+            throw new Worker_Exception_Communication('Unable to read data from stream');
         }
         if($buffer === ''){
             throw new Worker_Exception_Disconnect('No data read, stream closed?');
@@ -296,7 +296,7 @@ abstract class Worker_Slave{
         //if($this->debug) echo '[Sending '.Debug::param($this->sending).']';
         $bytes = fwrite($this->wstream,$this->sending);
         if($bytes === false){
-            throw new Worker_Exception('Unable to write data to stream');
+            throw new Worker_Exception_Communication('Unable to write data to stream');
         }
         if($bytes === 0){
             throw new Worker_Exception_Disconnect('Nothing sent, stream closed?');

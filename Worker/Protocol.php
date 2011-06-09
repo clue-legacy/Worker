@@ -106,7 +106,7 @@ class Worker_Protocol{
     public function getPacket(){
         $pos = strpos($this->receiving,self::ETX);                              // check for packet end
         if($pos === false){
-            throw new Worker_Exception('Packet end missing');
+            throw new Worker_Exception_Communication('Packet end missing');
         }
         
         $data = substr($this->receiving,0,$pos);                                // read packet until packet end
@@ -149,7 +149,7 @@ class Worker_Protocol{
         if($this->debug && $this->receiving !== $buffer) Debug::notice('[Incoming buffer now '.Debug::param($this->receiving).']');
         
         if($this->maxlength !== NULL && strlen($this->receiving) > $this->maxlength){
-            throw new Worker_Exception('Incoming buffer size of '.Debug::param(strlen($this->receiving)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
+            throw new Worker_Exception_Communication('Incoming buffer size of '.Debug::param(strlen($this->receiving)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
         }
     }
     
