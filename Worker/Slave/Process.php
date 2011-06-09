@@ -31,6 +31,7 @@ class Worker_Slave_Process extends Worker_Slave{
     
     public function close(){
         parent::close();
-        $this->process->close();
+        $this->process->kill(true)->close(true);
+        unset($this->process);
     }
 }
