@@ -126,6 +126,19 @@ class Worker_Master{
     }
     
     /**
+     * called when client has read new data, try to handle packets
+     * 
+     * @param Stream_Master_Client $slave
+     * @uses Worker_Slave::handlePackets()
+     */
+    public function onClientReadPacket(Stream_Master_Client $slave){
+        $slave = $slave->getNative();
+        if($slave instanceof Worker_Slave){
+            $slave->handlePackets();
+        }
+    }
+    
+    /**
      * destruct master (clean up all streams)
      */
     public function __destruct(){
@@ -278,15 +291,25 @@ class Worker_Master{
      * start event loop
      * 
      * @return Worker_Master this (chainable)
-     * @uses Worker_Master::waitData()
+     * @uses Worker_Master::onClientReadPacket() via EventEmitter when data arrived
+     * @uses Worker_Master::waitData() to actually wait for data
      */
     public function start(){
-        $ignore = NULL;
         $this->go = true;
         
-        do{
-            $this->waitData();
-        }while($this->go);
+        $this->events->addEvent('clientRead',array($this,'onClientReadPacket'));
+        
+        try{
+            do{
+                $this->waitData();
+            }while($this->go);
+        }
+        catch(Exception $e){                                                    // an error occured:
+            $this->go = false;                                                  // make sure to reset to previous state
+            $this->events->removeEvent('clientRead',array($this,'onClientReadPacket'));
+            throw $e;
+        }
+        $this->events->removeEvent('clientRead',array($this,'onClientReadPacket'));
         return $this;
     }
     

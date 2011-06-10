@@ -198,8 +198,8 @@ abstract class Worker_Slave{
      * @return mixed $data
      * @throws Worker_Exception on error or when timeout is reached
      * @uses Worker_Slave::getPacket() to check when a packet is finished
-     * @uses Worker_Slave::send()
-     * @uses Worker_Slave::receive()
+     * @uses Worker_Slave::streamSend()
+     * @uses Worker_Slave::streamReceive()
      */
     public function getPacketWait($timeout=NULL){
         try{                                                                    // try to get packet once
@@ -216,9 +216,12 @@ abstract class Worker_Slave{
             $client->streamReceive(); // try to read data, may throw an exception
             
             try{
-                $master->stop($client->getPacket());                            // try to get packet
+                $packet = $client->getPacket();                                 // try to get packet
             }
-            catch(Exception $e){ }                                              // ignore errors in case packet is not complete
+            catch(Exception $e){                                                // ignore errors in case packet is not complete
+                return;
+            }
+            $master->stop($packet);
         });
         if($timeout !== NULL){
             $master->addEvent('timeout',function(){
@@ -261,12 +264,21 @@ abstract class Worker_Slave{
         }
         
         //if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
-        
         $this->protocol->onData($buffer);
-        
+    }
+    
+    /**
+     * handle all incoming packets
+     * 
+     * @return Worker_Slave $this (chainable)
+     * @uses Worker_Slave::getPackets() to get all packets
+     * @uses Worker_Slave::onPacket() for each packet
+     */
+    public function handlePackets(){
         foreach($this->getPackets() as $packet){
             $this->onPacket($packet);
         }
+        return $this;
     }
     
     /**
@@ -288,6 +300,9 @@ abstract class Worker_Slave{
         }
         
         if($this->debug) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
+        
+        throw new Worker_Exception_Communication('Unknown incoming packet');
+        
         $this->protocol->putBack($packet);
     }
     
@@ -516,7 +531,7 @@ abstract class Worker_Slave{
                     $this->putPacket($packet);
                 }
             }else{                                                              // invalid packet
-                echo Debug::param($packet).NL;
+                echo 'UNKNOWN PACKET: '.Debug::param($packet).NL;
             }
         }
     }
@@ -530,6 +545,7 @@ abstract class Worker_Slave{
      * @uses Stream_Master_Standalone::start()
      * @uses Worker_Slave::streamSend()
      * @uses Worker_Slave::streamReceive()
+     * @uses Worker_Slave::handlePackets()
      */
     public function start(){
         $master = new Stream_Master_Standalone();
@@ -539,6 +555,8 @@ abstract class Worker_Slave{
         $master->addEvent('clientRead',function($client){
             $client = $client->getNative();
             $client->streamReceive();
+            
+            $client->handlePackets();
         });
         $master->addClient($this);
         $master->start();
