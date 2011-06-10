@@ -420,7 +420,7 @@ abstract class Worker_Slave{
         do{
             if($this->debug) Debug::notice('[Wait for next packet]');
             $packet = $this->getPacketWait();                                   // wait for new packet
-            if($packet->getHandle() === $handle){                               // correct packet received
+            if($packet instanceof Worker_Job && $packet->getHandle() === $handle){                               // correct packet received
                 $job = $packet;
                 if($this->debug) Debug::notice('[Correct '.Debug::param($job).' received]');
                 break;
