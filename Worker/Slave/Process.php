@@ -26,12 +26,20 @@ class Worker_Slave_Process extends Worker_Slave{
     public function __construct($cmd){
         $this->process = new Process($cmd);
         
-        parent::__construct($this->process->getStreamRead(),$this->process->getStreamWrite());
+        parent::__construct();
     }
     
     public function close(){
         parent::close();
         $this->process->kill(true)->close(true);
         unset($this->process);
+    }
+    
+    public function getStreamRead(){
+        return $this->process->getStreamRead();
+    }
+    
+    public function getStreamWrite(){
+        return $this->hasOutgoing() ? $this->process->getStreamWrite() : NULL;
     }
 }

@@ -19,13 +19,20 @@ class Worker_Slave_Stream extends Worker_Slave{
     const TIMEOUT_CONNECTION = 30;
     
     /**
+     * stream resource handle
+     * 
+     * @var resource
+     */
+    private $stream;
+    
+    /**
      * instanciate new remote connection to master with given address
      * 
      * @param string|int|NULL|resource $address hostname(+port),port or NULL=default address
      */
     public function __construct($address){
         if(is_resource($address)){
-            $socket = $address;
+            $this->stream = $address;
         }else{
             $hostname = 'localhost';
             $port     = 12345;
@@ -40,11 +47,19 @@ class Worker_Slave_Stream extends Worker_Slave{
             }
             
             $errstr = NULL; $errno = NULL;
-            $socket = fsockopen($hostname,$port,$errno,$errstr,self::TIMEOUT_CONNECTION);
-            if($socket === false){
+            $this->stream = fsockopen($hostname,$port,$errno,$errstr,self::TIMEOUT_CONNECTION);
+            if($this->stream === false){
                 throw new Worker_Exception('Unable to open socket to '.Debug::param($hostname).':'.Debug::param($port).' : '.Debug::param($errstr));
             }
         }
-        parent::__construct($socket,$socket);
+        parent::__construct();
+    }
+    
+    public function getStreamRead(){
+        return $this->stream;
+    }
+    
+    public function getStreamWrite(){
+        return $this->hasOutgoing() ? $this->stream : NULL;
     }
 }

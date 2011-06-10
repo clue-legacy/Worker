@@ -12,7 +12,15 @@
  */
 class Worker_Slave_Std extends Worker_Slave{
     public function __construct(){
-        parent::__construct(STDIN,STDOUT);
+        parent::__construct();
         $this->setDebug(false)->setAutosend(true);
+    }
+    
+    public function getStreamRead(){
+        return STDIN;
+    }
+    
+    public function getStreamWrite(){
+        return $this->hasOutgoing() ? STDOUT : NULL;
     }
 }

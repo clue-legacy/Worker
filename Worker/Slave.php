@@ -33,20 +33,6 @@ abstract class Worker_Slave{
     private $sending = '';
     
     /**
-     * stream to read from
-     * 
-     * @var resource
-     */
-    private $rstream;
-    
-    /**
-     * stream to write to
-     * 
-     * @var resource
-     */
-    private $wstream;
-    
-    /**
      * optional data
      * 
      * @var array
@@ -95,10 +81,7 @@ abstract class Worker_Slave{
      */
     protected $protocol;
     
-    public function __construct($rstream,$wstream){
-        $this->rstream = $rstream;
-        $this->wstream = $wstream;
-        
+    public function __construct(){
         $this->protocol = new Worker_Protocol();
         $this->protocol->setMaxlength(self::BUFFER_MAX)->setDebug($this->debug);
     }
@@ -132,13 +115,20 @@ abstract class Worker_Slave{
      * @return Worker_Slave this (chainable)
      */
     public function close(){
-        fclose($this->rstream);
-        if($this->rstream !== $this->wstream){
-            fclose($this->wstream);
+        $r = $this->getStreamRead();
+        if($r !== NULL){
+            fclose($r);
+        }
+        $w = $this->getStreamWrite();
+        if($w !== $r && $w !== NULL){
+            fclose($w);
         }
         return $this;
     }
     
+    public function hasOutgoing(){
+        return ($this->sending !== '');
+    }
     
     /**
      * checks whether there is a finished packet in the incoming queue
@@ -218,7 +208,6 @@ abstract class Worker_Slave{
         catch(Worker_Exception $e){ }
         
         $master = new Stream_Master_Standalone();
-        $master->setTimeout($timeout);
         $master->addEvent('clientWrite',function($client){
             $client->getNative()->streamSend();
         });
@@ -231,12 +220,28 @@ abstract class Worker_Slave{
             }
             catch(Exception $e){ }                                              // ignore errors in case packet is not complete
         });
-        $master->addEvent('timeout',function(){
-            throw new Worker_Exception_Timeout('Timeout');
-        });
+        if($timeout !== NULL){
+            $master->addEvent('timeout',function(){
+                throw new Worker_Exception_Timeout('Timeout');
+            })->setTimeout($timeout);
+        }
         $master->addClient($this);
         return $master->start();
     }
+    
+    /**
+     * get stream resource to read from
+     * 
+     * @return resource
+     */
+    abstract public function getStreamRead();
+    
+    /**
+     * get stream resource to write to (should return NULL if there's no data to be written)
+     * 
+     * @return resource|NULL
+     */
+    abstract public function getStreamWrite();
     
     /**
      * actually receive from worker stream
@@ -247,7 +252,7 @@ abstract class Worker_Slave{
      * @uses Worker_Slave::onPacket() on each packet received
      */
     public function streamReceive(){
-        $buffer = fread($this->rstream,self::BUFFER_CHUNK);
+        $buffer = fread($this->getStreamRead(),self::BUFFER_CHUNK);
         if($buffer === false){
             throw new Worker_Exception_Communication('Unable to read data from stream');
         }
@@ -294,7 +299,7 @@ abstract class Worker_Slave{
      */
     public function streamSend(){
         //if($this->debug) echo '[Sending '.Debug::param($this->sending).']';
-        $bytes = fwrite($this->wstream,$this->sending);
+        $bytes = fwrite($this->getStreamWrite(),$this->sending);
         if($bytes === false){
             throw new Worker_Exception_Communication('Unable to write data to stream');
         }
@@ -309,27 +314,6 @@ abstract class Worker_Slave{
         }
         if($this->debug) echo '[Outgoing buffer now '.Debug::param($this->sending).']';
         return $this;
-    }
-    
-    /**
-     * get stream to read from
-     * 
-     * @return resource
-     */
-    public function getStreamRead(){
-        return $this->rstream;
-    }
-    
-    /**
-     * get stream to write to
-     * 
-     * @return resource|NULL
-     */
-    public function getStreamWrite(){
-        if($this->sending === ''){
-            return NULL;
-        }
-        return $this->wstream;
     }
     
     public function __set($name,$value){
