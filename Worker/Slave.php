@@ -33,13 +33,6 @@ abstract class Worker_Slave{
     private $sending = '';
     
     /**
-     * optional data
-     * 
-     * @var array
-     */
-    private $vars = array();
-    
-    /**
      * proxies waiting for job results
      * 
      * @var array[Worker_Proxy]
@@ -329,29 +322,6 @@ abstract class Worker_Slave{
         }
         if($this->debug) echo '[Outgoing buffer now '.Debug::param($this->sending).']';
         return $this;
-    }
-    
-    public function __set($name,$value){
-        if($value === NULL){
-            unset($this->vars[$name]);
-        }else{
-            $this->vars[$name] = $value;
-        }
-    }
-    
-    public function __get($name){
-        if(!isset($this->vars[$name])){
-            throw new Exception('Invalid key '.Debug::param($name));
-        }
-        return $this->vars[$name];
-    }
-    
-    public function __isset($name){
-        return isset($this->vars[$name]);
-    }
-    
-    public function __unset($name){
-        unset($this->vars[$name]);
     }
     
     /**
