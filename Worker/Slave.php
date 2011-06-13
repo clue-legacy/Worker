@@ -90,6 +90,10 @@ abstract class Worker_Slave{
         return $this;
     }
     
+    public function getDebug(){
+        return $this->debug;
+    }
+    
     /**
      * close slave streams
      *  
