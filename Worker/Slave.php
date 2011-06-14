@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Slave{
+class Worker_Slave extends Stream_Master_Client{
     /**
      * chunk to read at once
      * 
