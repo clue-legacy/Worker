@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-abstract class Worker_Slave{
+class Worker_Slave{
     /**
      * chunk to read at once
      * 
@@ -53,7 +53,55 @@ abstract class Worker_Slave{
      */
     protected $protocol;
     
-    public function __construct(){
+    /**
+     * worker communicator
+     * 
+     * @var Worker_Communicator
+     */
+    protected $comm;
+    
+    /**
+     * create new slave communicating with given process/command
+     * 
+     * @param string $cmd
+     * @return Worker_Slave
+     */
+    public static function factoryProcess($cmd){
+        return new Worker_Slave(new Worker_Communicator_Process($cmd));
+    }
+    
+    /**
+     * create new slave communicating via standard input and output (STDIN / STDOUT)
+     * 
+     * @return Worker_Slave
+     * @uses Worker_Slave::setDebug() to disable debug (which corrupts stdout)
+     * @uses Worker_Slave::setAutosend() to enable auto-sending STDOUT
+     */
+    public static function factoryStdio(){
+        $slave = new Worker_Slave(new Worker_Communicator_Stdio());
+        return $slave->setDebug(false)->setAutosend(true);
+    }
+    
+    /**
+     * create new slave communicating via given duplex stream resource
+     * 
+     * @param resource $stream
+     * @return Worker_Slave
+     */
+    public static function factoryStream($stream){
+        return new Worker_Slave(new Worker_Communicator_Stream($stream));
+    }
+    
+    /**
+     * instanciate new worker slave on given communicator
+     * 
+     * @param Worker_Communicator $comm
+     * @uses Worker_Protocol::setMaxlength()
+     * @uses Worker_Protocol::setDebug()
+     */
+    protected function __construct(Worker_Communicator $comm){
+        $this->comm = $comm;
+        
         $this->protocol = new Worker_Protocol();
         $this->protocol->setMaxlength(self::BUFFER_MAX)->setDebug($this->debug);
     }
@@ -94,23 +142,6 @@ abstract class Worker_Slave{
         return $this->debug;
     }
     
-    /**
-     * close slave streams
-     *  
-     * @return Worker_Slave this (chainable)
-     */
-    public function close(){
-        $r = $this->getStreamRead();
-        if($r !== NULL){
-            fclose($r);
-        }
-        $w = $this->getStreamWrite();
-        if($w !== $r && $w !== NULL){
-            fclose($w);
-        }
-        return $this;
-    }
-    
     public function hasOutgoing(){
         return ($this->sending !== '');
     }
@@ -142,10 +173,6 @@ abstract class Worker_Slave{
             $this->streamSend();
         }
         return $this;
-    }
-    
-    public function putBacks($packets){
-        $this->protocol->putBacks($packets);
     }
     
     /**
@@ -222,18 +249,47 @@ abstract class Worker_Slave{
     }
     
     /**
+     * get communicator
+     * 
+     * @return Worker_Communicator
+     */
+    public function getCommunicator(){
+        return $this->comm;
+    }
+    
+    /**
+     * close slave streams
+     *  
+     * @return Worker_Slave this (chainable)
+     * @uses Worker_Communicator::close()
+     */
+    public function close(){
+        $this->comm->close();
+        return $this;
+    }
+    
+    /**
      * get stream resource to read from
      * 
      * @return resource
+     * @uses Worker_Communicator::getStreamRead()
      */
-    abstract public function getStreamRead();
+    public function getStreamRead(){
+        return $this->comm->getStreamRead();
+    }
     
     /**
      * get stream resource to write to (should return NULL if there's no data to be written)
      * 
      * @return resource|NULL
+     * @uses Worker_Communicator::getStreamWrite()
      */
-    abstract public function getStreamWrite();
+    public function getStreamWrite(){
+        if($this->sending === ''){
+            return NULL;
+        }
+        return $this->comm->getStreamRead();
+    }
     
     /**
      * actually receive from worker stream

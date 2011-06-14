@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Slave_Stream extends Worker_Slave{
+class Worker_Communicator_Stream extends Worker_Communicator{
     /**
      * connection timeout
      * 
@@ -52,7 +52,10 @@ class Worker_Slave_Stream extends Worker_Slave{
                 throw new Worker_Exception('Unable to open socket to '.Debug::param($hostname).':'.Debug::param($port).' : '.Debug::param($errstr));
             }
         }
-        parent::__construct();
+    }
+    
+    public function close(){
+        fclose($this->stream);
     }
     
     public function getStreamRead(){
@@ -60,6 +63,6 @@ class Worker_Slave_Stream extends Worker_Slave{
     }
     
     public function getStreamWrite(){
-        return $this->hasOutgoing() ? $this->stream : NULL;
+        return $this->stream;
     }
 }

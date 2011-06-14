@@ -10,7 +10,7 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Slave_Process extends Worker_Slave{
+class Worker_Communicator_Process extends Worker_Communicator{
     /**
      * process instance
      * 
@@ -25,8 +25,6 @@ class Worker_Slave_Process extends Worker_Slave{
      */
     public function __construct($cmd){
         $this->process = new Process($cmd);
-        
-        parent::__construct();
     }
     
     public function close(){
@@ -39,6 +37,6 @@ class Worker_Slave_Process extends Worker_Slave{
     }
     
     public function getStreamWrite(){
-        return $this->hasOutgoing() ? $this->process->getStreamWrite() : NULL;
+        return $this->process->getStreamWrite();
     }
 }

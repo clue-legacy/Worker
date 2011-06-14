@@ -10,17 +10,14 @@
  * @version v0.0.1
  * @link https://github.com/clue/Worker
  */
-class Worker_Slave_Std extends Worker_Slave{
-    public function __construct(){
-        parent::__construct();
-        $this->setDebug(false)->setAutosend(true);
-    }
+class Worker_Communicator_Stdio extends Worker_Communicator{
+    public function close(){ }
     
     public function getStreamRead(){
         return STDIN;
     }
     
     public function getStreamWrite(){
-        return $this->hasOutgoing() ? STDOUT : NULL;
+        return STDOUT;
     }
 }
