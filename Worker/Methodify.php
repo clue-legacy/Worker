@@ -15,9 +15,9 @@ class Worker_Methodify extends Worker_Slave{
     /**
      * keeps track of methods offered to the other side
      * 
-     * @var Worker_Methods|NULL
+     * @var Worker_Methods
      */
-    protected $methods = NULL;
+    protected $methods;
     
     /**
      * keeps track of remote methods callable
@@ -30,9 +30,9 @@ class Worker_Methodify extends Worker_Slave{
      * instanciate new method interface for given slave
      * 
      * @param Worker_Slave $slave
-     * @uses Worker_Slave::getCommunicator()
+     * @uses Worker_Slave::getCommunicator() to share communicator with decorated slave
      * @uses Worker_Slave::getDebug()
-     * @uses Worker_Slave::setdebug()
+     * @uses Worker_Slave::setDebug()
      */
     public function __construct(Worker_Slave $slave){
         parent::__construct($slave->getCommunicator());
@@ -100,7 +100,7 @@ class Worker_Methodify extends Worker_Slave{
      * @throws Exception exception as-is
      * @uses Worker_Slave::putPacket()
      * @uses Worker_Slave::getPacketWait()
-     * @uses Worker_Slave::putBacks()
+     * @uses Worker_Protocol::putBacks() to put back invalid packets received while waiting
      */
     public function call($name){
         if($name instanceof Worker_Job){
@@ -166,6 +166,9 @@ class Worker_Methodify extends Worker_Slave{
      * 
      * @param Worker_Job $job
      * @return boolean true if given packet was a job that could be handled, false otherwise
+     * @uses Worker_Job::isStarted() to check whether job has to be started
+     * @uses Worker_Job::call() to actually invoke job
+     * @uses Worker_Slave::putPacket() to send back job results
      * @uses Worker_Proxy::handleJob() to try to handle job on each proxy
      * @uses Worker_Proxy::hasJob() to remove proxy if it has no more jobs attached
      */
@@ -196,6 +199,7 @@ class Worker_Methodify extends Worker_Slave{
      * called when new packet has been received
      * 
      * @param mixed $packet
+     * @throws Worker_Exception_Communication if given packet is invalid
      * @uses Worker_Methodify::handleJob() to try to handle packet as job
      */
     protected function onPacket($packet){
@@ -219,8 +223,9 @@ class Worker_Methodify extends Worker_Slave{
      * 
      * @param mixed $on instance or object to call methods on
      * @deprecated use work() instead
-     * @uses Worker_Slave::addMethods()
-     * @uses Worker_Slave::work()
+     * @uses Worker_Slave::setAutosend() to disable autosend (as we're starting a main loop anyway)
+     * @uses Worker_Methodify::addMethods()
+     * @uses Worker_Methodify::work()
      */
     public function serve($on){
         $this->setAutosend(false);

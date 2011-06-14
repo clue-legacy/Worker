@@ -138,10 +138,21 @@ class Worker_Slave{
         return $this;
     }
     
+    /**
+     * get debugging toggle state
+     * 
+     * @return boolean
+     * @see Worker_Slave::setDebug()
+     */
     public function getDebug(){
         return $this->debug;
     }
     
+    /**
+     * returns whether this slave has any outgoing data left to be sent
+     * 
+     * @return boolean
+     */
     public function hasOutgoing(){
         return ($this->sending !== '');
     }
@@ -260,7 +271,7 @@ class Worker_Slave{
     /**
      * close slave streams
      *  
-     * @return Worker_Slave this (chainable)
+     * @return Worker_Slave $this (chainable)
      * @uses Worker_Communicator::close()
      */
     public function close(){
@@ -279,7 +290,9 @@ class Worker_Slave{
     }
     
     /**
-     * get stream resource to write to (should return NULL if there's no data to be written)
+     * get stream resource to write to 
+     * 
+     * returns NULL if there's no data to be written
      * 
      * @return resource|NULL
      * @uses Worker_Communicator::getStreamWrite()
@@ -317,6 +330,7 @@ class Worker_Slave{
      * handle all incoming packets
      * 
      * @return Worker_Slave $this (chainable)
+     * @throws Worker_Exception if either packet can not be handled
      * @uses Worker_Slave::getPackets() to get all packets
      * @uses Worker_Slave::onPacket() for each packet
      */
