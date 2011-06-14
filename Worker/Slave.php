@@ -288,7 +288,7 @@ class Worker_Slave{
         if($this->sending === ''){
             return NULL;
         }
-        return $this->comm->getStreamRead();
+        return $this->comm->getStreamWrite();
     }
     
     /**
@@ -296,11 +296,12 @@ class Worker_Slave{
      * 
      * @throws Worker_Exception on error or if buffer exceeds maximum size
      * @return Worker_Slave this (chainable)
+     * @uses Worker_Communicator::getStreamRead()
      * @uses Worker_Slave::getPackets()
      * @uses Worker_Slave::onPacket() on each packet received
      */
     public function streamReceive(){
-        $buffer = fread($this->getStreamRead(),self::BUFFER_CHUNK);
+        $buffer = fread($this->comm->getStreamRead(),self::BUFFER_CHUNK);
         if($buffer === false){
             throw new Worker_Exception_Communication('Unable to read data from stream');
         }
@@ -340,10 +341,11 @@ class Worker_Slave{
      * 
      * @throws Worker_Exception on error
      * @return Worker_Slave this (chainable)
+     * @uses Worker_Communicator::getStreamWrite()
      */
     public function streamSend(){
         //if($this->debug) echo '[Sending '.Debug::param($this->sending).']';
-        $bytes = fwrite($this->getStreamWrite(),$this->sending);
+        $bytes = fwrite($this->comm->getStreamWrite(),$this->sending);
         if($bytes === false){
             throw new Worker_Exception_Communication('Unable to write data to stream');
         }
