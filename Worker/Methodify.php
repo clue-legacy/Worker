@@ -3,7 +3,7 @@
 /**
  * temporary class holding slave methods
  */
-class Worker_Methodify{
+class Worker_Methodify extends Worker_Slave{
         
     /**
      * proxies waiting for job results
@@ -26,9 +26,27 @@ class Worker_Methodify{
      */
     protected $methodsRemote = array();
     
+    /**
+     * instanciate new method interface for given slave
+     * 
+     * @param Worker_Slave $slave
+     * @uses Worker_Slave::getCommunicator()
+     * @uses Worker_Slave::getDebug()
+     * @uses Worker_Slave::setdebug()
+     */
     public function __construct(Worker_Slave $slave){
-        $this->slave = $slave;
+        parent::__construct($slave->getCommunicator());
+        $this->setDebug($slave->getDebug());
         $this->methods = new Worker_Methods();
+    }
+    
+    /**
+     * why decorate again? return self
+     * 
+     * @return Worker_Methodify
+     */
+    public function decorateMethods(){
+        return $this;
     }
 
     /**
@@ -93,26 +111,26 @@ class Worker_Methodify{
             $job = new Worker_Job($name,$args); // create new job for given arguments
         }
         
-        $this->slave->putPacket($job);
+        $this->putPacket($job);
         $handle = $job->getHandle();
         
         $packets = array();
         do{
-            if($this->slave->getDebug()) Debug::notice('[Wait for next packet]');
-            $packet = $this->slave->getPacketWait();                            // wait for new packet
+            if($this->debug) Debug::notice('[Wait for next packet]');
+            $packet = $this->getPacketWait();                                   // wait for new packet
             if($packet instanceof Worker_Job && $packet->getHandle() === $handle){ // correct packet received
                 $job = $packet;
-                if($this->slave->getDebug()) Debug::notice('[Correct '.Debug::param($job).' received]');
+                if($this->debug) Debug::notice('[Correct '.Debug::param($job).' received]');
                 break;
             }else{
-                if($this->slave->getDebug()) Debug::notice('[Useless '.Debug::param($packet).' received');
+                if($this->debug) Debug::notice('[Useless '.Debug::param($packet).' received');
                 $packets[] = $packet;                                           // buffer incorrect packet
             }
         }while(true);
         
         if($packets){
-            if($this->slave->getDebug()) Debug::notice('[Put back useless packets '.Debug::param($packets).']');
-            $this->slave->putBacks($packets);
+            if($this->debug) Debug::notice('[Put back useless packets '.Debug::param($packets).']');
+            $this->protocol->putBacks($packets);
         }
         
         return $job->ret();                                                     // return job results
@@ -126,8 +144,8 @@ class Worker_Methodify{
      * @uses Worker_Slave::putPacket()
      */
     public function putJob($job,$proxy=NULL){
-        if($this->slave->getDebug()) Debug::notice('[Outgoing '.Debug::param($job).']');
-        $this->slave->putPacket($job);
+        if($this->debug) Debug::notice('[Outgoing '.Debug::param($job).']');
+        $this->putPacket($job);
         
         if($proxy !== NULL && !in_array($proxy,$this->proxies,true)){           // only add proxy if it's not listed already
             $this->proxies[] = $proxy;
@@ -152,7 +170,7 @@ class Worker_Methodify{
      * @uses Worker_Proxy::hasJob() to remove proxy if it has no more jobs attached
      */
     protected function handleJob(Worker_Job $job){
-        if($this->slave->getDebug()) Debug::notice('[Incoming job '.Debug::param($job).']');
+        if($this->debug) Debug::notice('[Incoming job '.Debug::param($job).']');
         
         if(!$job->isStarted() /*$job->getSlaveId() === $this->id*/){
             $job->call($this->methods);
@@ -187,11 +205,11 @@ class Worker_Methodify{
             }
         }else if($packet instanceof Worker_Methods){
             $this->methodsRemote = $packet->getMethodNames();
-            if($this->slave->getDebug()) Debug::dump('methodsRemote',$this->methodsRemote);
+            if($this->debug) Debug::dump('methodsRemote',$this->methodsRemote);
             return;
         }
         
-        if($this->slave->getDebug()) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
+        if($this->debug) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
         
         throw new Worker_Exception_Communication('Unknown incoming packet');
     }
@@ -205,7 +223,7 @@ class Worker_Methodify{
      * @uses Worker_Slave::work()
      */
     public function serve($on){
-        $this->slave->setAutosend(false);
+        $this->setAutosend(false);
         
         $this->addMethods($on);
         $this->work();
@@ -219,7 +237,7 @@ class Worker_Methodify{
      */
     public function work(){
         while(true){
-            $packet = $this->slave->getPacketWait();
+            $packet = $this->getPacketWait();
             if($packet instanceof Worker_Job){
                 $this->handleJob($packet);
             }else{                                                              // invalid packet
@@ -261,7 +279,7 @@ class Worker_Methodify{
      */
     public function addMethod($name,$fn){
         $this->methods->addMethod($name,$fn);
-        $this->slave->putPacket($this->methods->toPacket());
+        $this->putPacket($this->methods->toPacket());
         return $this;
     }
     
@@ -276,7 +294,7 @@ class Worker_Methodify{
      */
     public function addMethods($methods){
         if($this->methods->addMethods($methods)){                               // only pack if something actually changed
-            $this->slave->putPacket($this->methods->toPacket());
+            $this->putPacket($this->methods->toPacket());
         }
         return $this;
     }

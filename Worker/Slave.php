@@ -107,11 +107,11 @@ class Worker_Slave{
     }
     
     /**
-     * get method interface
+     * decorate with interface for invoking remote methods (RPC interface)
      * 
      * @return Worker_Methodify
      */
-    public function methodify(){
+    public function decorateMethods(){
         return new Worker_Methodify($this);
     }
     
