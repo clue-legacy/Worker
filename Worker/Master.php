@@ -61,9 +61,9 @@ class Worker_Master{
      */
     public static function connect($address=NULL){
         if($address === NULL){
-            return new Worker_Slave_Std();
+            return Worker_Slave::factoryStdio();
         }
-        return new Worker_Slave_Stream($address);
+        return Worker_Slave::factoryStream($address);
     }
     
     /**
@@ -94,7 +94,7 @@ class Worker_Master{
         //throw new Stream_Master_Exception();
         
         $this->stream->removeClient($client);
-        $this->addSlave(new Worker_Slave_Stream($client->getNative()));
+        $this->addSlave(Worker_Slave::factoryStream($client->getNative()));
     }
     public function onClientDisconnectForward(Stream_Master_Client $slave){
         $slave = $slave->getNative();
@@ -154,7 +154,7 @@ class Worker_Master{
      */
     public function addSlave($slave){
         if(!($slave instanceof Worker_Slave)){
-            $slave = new Worker_Slave_Process($slave);
+            $slave = Worker_Slave::factoryProcess($slave);
         }
         $slave->setAutosend(false);
         $this->stream->addClient($slave);

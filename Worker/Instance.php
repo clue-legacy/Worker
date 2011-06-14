@@ -50,7 +50,7 @@ class Worker_Instance extends Worker_Master{
      */
     public function getRemoteMethodSlaves($method){
         $ret = array();
-        foreach($this->getSlaves() as $id=>$slave){
+        foreach($this->getMethodSlaves() as $id=>$slave){
             if($slave->hasRemoteMethod($method)){
                 $ret[$id] = $slave;
             }
@@ -84,7 +84,7 @@ class Worker_Instance extends Worker_Master{
      */
     public function getRemoteMethods(){
         $ret = array();
-        foreach($this->getSlaves() as $slave){
+        foreach($this->getMethodSlaves() as $slave){
             $ret = array_merge($ret,$slave->getRemoteMethods());
         }
         return array_unique($ret);
@@ -98,7 +98,7 @@ class Worker_Instance extends Worker_Master{
      * @uses Worker_Slave::hasRemoteMethod()
      */
     public function hasRemoteMethod($method){
-        foreach($this->getSlaves() as $slave){
+        foreach($this->getMethodSlaves() as $slave){
             if($slave->hasRemoteMethod($method)){
                 return true;
             }
@@ -131,7 +131,9 @@ class Worker_Instance extends Worker_Master{
      * @uses Worker_Master::addSlave()
      */
     public function addServer($server){
-        $this->addSlave(new Worker_Slave_Stream($server));
+        $slave = Worker_Slave::factoryStream($server);
+        $slave = $slave->decorateMethods();
+        $this->addSlave($slave);
         return $this;
     }
     
@@ -148,7 +150,7 @@ class Worker_Instance extends Worker_Master{
     public function addMethod($name,$fn){
         $this->methods->addMethod($name,$fn);
         
-        foreach($this->getSlaves() as $slave){                                  // forward method to all clients
+        foreach($this->getMethodSlaves() as $slave){                            // forward method to all clients
             if(!$slave->hasMethod($name)){
                 $slave->addMethod($name,$fn);
             }
@@ -169,7 +171,7 @@ class Worker_Instance extends Worker_Master{
         $methods = $this->methods->addMethods($methods);
         
         if($methods){
-            foreach($this->getSlaves() as $slave){                              // for each client:
+            foreach($this->getMethodSlaves() as $slave){                        // for each client:
                 $new = array();                                                 //   build array of new methods
                 foreach($methods as $name=>$fn){
                     if(!$slave->hasMethod($name)){
@@ -192,5 +194,15 @@ class Worker_Instance extends Worker_Master{
      */
     public function getMethodNames(){
         return $this->methods->getMethodNames();
+    }
+    
+    public function getMethodSlaves(){
+        $slaves = array();
+        foreach($this->getSlaves() as $id=>$slave){
+            if($slave instanceof Worker_Methodify){
+                $slaves[$id] = $slave;
+            }
+        }
+        return $slaves;
     }
 }
