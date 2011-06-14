@@ -116,16 +116,14 @@ class Worker_Master{
         //throw new Stream_Master_Exception();
         
         $this->stream->removeClient($client);
-        $this->addSlave(Worker_Slave::factoryStream($client->getNative()));
+        $this->addSlave(Worker_Slave::factoryStream($client->getStreamRead()));
     }
     public function onClientDisconnectForward(Stream_Master_Client $slave){
-        $slave = $slave->getNative();
         if($slave instanceof Worker_Slave){
             $this->events->fireEvent('slaveDisconnect',$slave);
         }
     }
     public function onClientReadForward(Stream_Master_Client $slave){
-        $slave = $slave->getNative();
         if($slave instanceof Worker_Slave){
             try{
                 $slave->streamReceive();
@@ -136,7 +134,6 @@ class Worker_Master{
         }
     }
     public function onClientWriteForward(Stream_Master_Client $slave){
-        $slave = $slave->getNative();
         if($slave instanceof Worker_Slave){
             try{
                 $slave->streamSend();
@@ -154,7 +151,6 @@ class Worker_Master{
      * @uses Worker_Slave::handlePackets()
      */
     public function onClientReadPacket(Stream_Master_Client $slave){
-        $slave = $slave->getNative();
         if($slave instanceof Worker_Slave){
             $slave->handlePackets();
         }
@@ -186,7 +182,6 @@ class Worker_Master{
     public function getSlaves(){
         $slaves = array();
         foreach($this->stream->getClients() as $id=>$slave){
-            $slave = $slave->getNative();
             if($slave instanceof Worker_Slave){
                 $slaves[$id] = $slave;
             }

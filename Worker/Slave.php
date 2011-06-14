@@ -236,11 +236,9 @@ class Worker_Slave extends Stream_Master_Client{
         
         $master = new Stream_Master_Standalone();
         $master->addEvent('clientWrite',function($client){
-            $client = $client->getNative();
             $client->streamSend();
         });
         $master->addEvent('clientRead',function($client) use ($master){
-            $client = $client->getNative();
             $client->streamReceive(); // try to read data, may throw an exception
             
             try{
@@ -396,7 +394,6 @@ class Worker_Slave extends Stream_Master_Client{
     public function start(){
         $master = new Stream_Master_Standalone();
         $master->addEvent('clientWrite',function($client) use ($master){
-            $client = $client->getNative();
             try{
                 $client->streamSend();
             }
@@ -405,7 +402,6 @@ class Worker_Slave extends Stream_Master_Client{
             }
         });
         $master->addEvent('clientRead',function($client) use ($master){
-            $client = $client->getNative();
             try{
                 $client->streamReceive()->handlePackets();
             }
