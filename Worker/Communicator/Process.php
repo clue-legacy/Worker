@@ -28,7 +28,7 @@ class Worker_Communicator_Process extends Worker_Communicator{
     }
     
     public function close(){
-        $this->process->kill(true)->close(true);
+        //$this->process->kill(true)->close(true); // no need to do so here, destructor already cleans up
         unset($this->process);
     }
     
