@@ -81,12 +81,34 @@ class Worker_Master{
         $this->stream->addEvent('clientWrite',array($this,'onClientWriteForward'));
     }
     
+    
+    /**
+     * destruct master (clean up all streams)
+     * 
+     * @uses Stream_Master_Standalone::startOnce() to send remaining packets
+     * @uses Stream_Master_Standalone::close() to close all client streams
+     */
+    public function __destruct(){
+        $this->stream->startOnce(0); // send remaining packets?
+        $this->stream->close(); // close all client streams
+        $this->stream = NULL;
+    }
+    
+    public function setDebug($toggle){
+        $this->debug = !!$toggle;
+        return $this;
+    }
+    
     public function onSlaveConnectEcho(Worker_Slave $slave){
-        echo NL.'SLAVE CONNECTED: '.NL.Debug::param($slave).NL;
+        echo "\r\nSlave connected: ";
+        var_dump($slave);
+        //echo NL.'SLAVE CONNECTED: '.NL.Debug::param($slave).NL;
     }
     
     public function onSlaveDisconnectEcho(Worker_Slave $slave){
-        echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
+        echo "\r\nSlave disconnected: ";
+        var_dump($slave);
+        //echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
     }
     
     public function onClientConnectForward(Stream_Master_Client $client){
@@ -136,14 +158,6 @@ class Worker_Master{
         if($slave instanceof Worker_Slave){
             $slave->handlePackets();
         }
-    }
-    
-    /**
-     * destruct master (clean up all streams)
-     */
-    public function __destruct(){
-        $this->stream->close();
-        $this->stream = NULL;
     }
     
     /**
@@ -271,7 +285,7 @@ class Worker_Master{
             $this->waitData($timeout);
             
             if($timeout !== NULL && microtime(true) > $timeout && !$this->hasPacket()){
-                throw new Worker_Exception_Timeout('Timeout');
+                throw new Worker_Exception_Timeout('Waiting for packet timed out');
             }
         }
         return $this;
@@ -343,7 +357,7 @@ class Worker_Master{
             if($timeout < 0){
                 $timeout = 0;
             }
-            if($this->debug) Debug::notice('[Wait for '.Debug::param(max($ssleep,0)).'s]');
+            if($this->debug) Debug::notice('[Wait for '.Debug::param($timeout).'s]');
         }else if($this->debug) Debug::notice('[Wait forever]');
         
         $this->stream->startOnce($timeout);
