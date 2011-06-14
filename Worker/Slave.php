@@ -236,7 +236,8 @@ class Worker_Slave extends Stream_Master_Client{
         
         $master = new Stream_Master_Standalone();
         $master->addEvent('clientWrite',function($client){
-            $client->getNative()->streamSend();
+            $client = $client->getNative();
+            $client->streamSend();
         });
         $master->addEvent('clientRead',function($client) use ($master){
             $client = $client->getNative();
@@ -308,7 +309,7 @@ class Worker_Slave extends Stream_Master_Client{
      * actually receive from worker stream
      * 
      * @throws Worker_Exception on error or if buffer exceeds maximum size
-     * @return Worker_Slave this (chainable)
+     * @return Worker_Slave $this (chainable)
      * @uses Worker_Communicator::getStreamRead()
      * @uses Worker_Slave::getPackets()
      * @uses Worker_Slave::onPacket() on each packet received
@@ -324,6 +325,7 @@ class Worker_Slave extends Stream_Master_Client{
         
         //if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
         $this->protocol->onData($buffer);
+        return $this;
     }
     
     /**
@@ -380,26 +382,39 @@ class Worker_Slave extends Stream_Master_Client{
     /**
      * start main loop, wait for packets, handle packets
      * 
-     * @return mixed $data
+     * will block until connection is closed
+     * 
+     * @return Worker_Slave $this (chainable)
      * @throws Worker_Exception on error
      * @uses Stream_Master_Standalone::addClient()
      * @uses Stream_Master_Standalone::start()
+     * @uses Stream_Master_Standalone::stop() to stop event loop when connection is closed
      * @uses Worker_Slave::streamSend()
      * @uses Worker_Slave::streamReceive()
      * @uses Worker_Slave::handlePackets()
      */
     public function start(){
         $master = new Stream_Master_Standalone();
-        $master->addEvent('clientWrite',function($client){
-            $client->getNative()->streamSend();
-        });
-        $master->addEvent('clientRead',function($client){
+        $master->addEvent('clientWrite',function($client) use ($master){
             $client = $client->getNative();
-            $client->streamReceive();
-            
-            $client->handlePackets();
+            try{
+                $client->streamSend();
+            }
+            catch(Worker_Exception_Disconnect $e){
+                $master->stop();
+            }
+        });
+        $master->addEvent('clientRead',function($client) use ($master){
+            $client = $client->getNative();
+            try{
+                $client->streamReceive()->handlePackets();
+            }
+            catch(Worker_Exception_Disconnect $e){ 
+                $master->stop();
+            }
         });
         $master->addClient($this);
         $master->start();
+        return $this;
     }
 }
