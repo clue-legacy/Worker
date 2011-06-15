@@ -313,13 +313,31 @@ class Worker_Slave extends Stream_Master_Client{
      * @uses Worker_Slave::onPacket() on each packet received
      */
     public function streamReceive(){
-        $buffer = fread($this->comm->getStreamRead(),self::BUFFER_CHUNK);
+        $stream = $this->comm->getStreamRead();
+        if($this->debug) echo '[read';
+        $meta = stream_get_meta_data($stream);
+        $len = $meta['unread_bytes'];
+        if($len === 0){ // length unknown (usual case), read up to one chunk from incoming streams
+            $len = self::BUFFER_CHUNK;
+            if($this->debug) echo ' up to one chunk';
+        }else if($len > self::BUFFER_CHUNK){ // buffer length known and bigger than chunk, read chunk from buffer
+            $len = self::BUFFER_CHUNK;
+            if($this->debug) echo ' exactly one buffered chunk';
+        }else{  // small buffer remaining, read EXACTLY remaining buffer. execeeding buffer length WILL block fread() when no more data is incoming
+            if($this->debug) echo ' remaining buffer';
+        }
+        if($this->debug) echo ' from '.$stream.'...';
+        $buffer = fread($stream,$len);
         if($buffer === false){
+            if($this->debug) echo ' ERROR]';
             throw new Worker_Exception_Communication('Unable to read data from stream');
         }
         if($buffer === ''){
+            if($this->debug) echo ' CLOSED]';
             throw new Worker_Exception_Disconnect('No data read, stream closed?');
         }
+        
+        if($this->debug) echo ' OK '.strlen($buffer).' byte(s): "'.$buffer.'"]';
         
         //if($this->debug) Debug::notice('[Received data '.Debug::param($buffer).']');
         $this->protocol->onData($buffer);
