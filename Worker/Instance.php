@@ -196,13 +196,12 @@ class Worker_Instance extends Worker_Master{
         return $this->methods->getMethodNames();
     }
     
+    /**
+     * get array of all methodified worker slaves
+     * 
+     * @return array
+     */
     public function getMethodSlaves(){
-        $slaves = array();
-        foreach($this->getSlaves() as $id=>$slave){
-            if($slave instanceof Worker_Methodify){
-                $slaves[$id] = $slave;
-            }
-        }
-        return $slaves;
+        return $this->stream->getClientsInstace('Worker_Methodify');
     }
 }

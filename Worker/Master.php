@@ -191,15 +191,10 @@ class Worker_Master{
      * return all worker slaves
      * 
      * @return array[Worker_Slave]
+     * @uses Stream_Master_Standalone::getClientsInstance()
      */
     public function getSlaves(){
-        $slaves = array();
-        foreach($this->stream->getClients() as $id=>$slave){
-            if($slave instanceof Worker_Slave){
-                $slaves[$id] = $slave;
-            }
-        }
-        return $slaves;
+        return $this->stream->getClientsInstance('Worker_Slave');
     }
     
     /**
@@ -208,9 +203,15 @@ class Worker_Master{
      * @param Worker_Slave $slave
      * @return int
      * @throws Worker_Exception on error
+     * @uses Stream_Master_Standalone::getClientId()
      */
-    public function getSlaveId($slave){
-        return $this->stream->getClientId($slave);
+    public function getSlaveId(Worker_Slave $slave){
+        try{
+            return $this->stream->getClientId($slave);
+        }
+        catch(Exception $e){
+            throw new Worker_Exception('Invalid slave given');
+        }
     }
     
     /**
@@ -286,6 +287,7 @@ class Worker_Master{
      * @param float|NULL $timeout maximum time to wait as target timestamp (NULL=wait forever)
      * @return Worker_Master this (chainable)
      * @throws Worker_Exception when timeout is reached
+     * @uses Worker_Master::hasPacket()
      * @uses Worker_Master::waitData()
      */
     public function waitPacket($timeout=NULL){
