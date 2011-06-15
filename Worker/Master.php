@@ -94,8 +94,18 @@ class Worker_Master{
         $this->stream = NULL;
     }
     
+    /**
+     * set debug state
+     * 
+     * @param boolean $toggle
+     * @return Worker_Master $this (chainable)
+     * @uses Worker_Slave::setDebug() to apply same debug state to all slaves
+     */
     public function setDebug($toggle){
         $this->debug = !!$toggle;
+        foreach($this->getSlaves() as $slave){
+            $slave->setDebug($this->debug); // does not affect decorated instances
+        }
         return $this;
     }
     
@@ -161,11 +171,15 @@ class Worker_Master{
      * 
      * @param string|Worker_Slave $slave
      * @return Worker_Slave
+     * @uses Worker_Slave::factoryProcess() when slave is a command line
+     * @uses Worker_Slave::setDebug() to mirror master debug state to new slave
+     * @uses Stream_Master_Standalone::addClient()
      */
     public function addSlave($slave){
         if(!($slave instanceof Worker_Slave)){
             $slave = Worker_Slave::factoryProcess($slave);
         }
+        $slave->setDebug($this->debug);                                         // automatically apply master debug setting to new slaves
         $this->stream->addClient($slave);
         
         $this->events->fireEvent('slaveConnect',$slave);
