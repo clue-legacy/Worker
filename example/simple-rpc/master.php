@@ -3,11 +3,19 @@
 require_once(dirname(__FILE__).'/../init.inc.php');
 
 $master = new Worker_Master();
+$master->setDebug(true);
 $slave = $master->addSlave('php '.dirname(__file__).'/slave.php')->decorateMethods();
 
-var_dump('echo',$slave->proxyBlock()->test(123));
+echo 'ECHO';
+var_dump(123);
+var_dump($slave->proxyBlock()->test(123));
 
-var_dump('echo again',$slave->proxyBlock()->test(123));
+//$master->setDebug(false);
+$slave->setDebug(false);
+
+echo 'ECHO again';
+var_dump(123);
+var_dump($slave->proxyBlock()->test(123));
 
 //$slave2 = $master->addSlave(new Worker_Slave_Local('Worker'));
 
@@ -18,6 +26,10 @@ try{
 catch(Exception $e){
     echo ' FAILED (which is GOOD!)';
 }
+
+//$slave->stop();
+
+//$master->close();
 
 /*
 $proxy = $slave->proxyBackground();
