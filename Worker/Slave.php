@@ -376,21 +376,26 @@ class Worker_Slave extends Stream_Master_Client{
      * @uses Worker_Communicator::getStreamWrite()
      */
     public function streamSend(){
+        $len = strlen($this->sending);
+        $stream = $this->comm->getStreamWrite();
+        if($this->debug) echo '[send '.$len.' byte(s) "'.$this->sending.'" to '.$stream.'...';
         //if($this->debug) echo '[Sending '.Debug::param($this->sending).']';
-        $bytes = fwrite($this->comm->getStreamWrite(),$this->sending);
+        $bytes = fwrite($stream,$this->sending);
         if($bytes === false){
+            if($this->debug) echo ' ERROR]';
             throw new Worker_Exception_Communication('Unable to write data to stream');
         }
         if($bytes === 0){
+            if($this->debug) echo ' CLOSED]';
             throw new Worker_Exception_Disconnect('Nothing sent, stream closed?');
         }
-        if($this->debug) echo '[Sent '.Debug::param($bytes).' B: '.Debug::param(substr($this->sending,0,$bytes)).']';
-        if($bytes == strlen($this->sending)){
+        if($bytes == $len){
             $this->sending = '';
+            if($this->debug) echo ' OK]';
         }else{
             $this->sending = substr($this->sending,$bytes);
+            if($this->debug) echo ' OK - sent '.$bytes.' byte(s) - remaining '.strlen($this->sending).' byte(s): "'.$this->sending.'"]';
         }
-        if($this->debug) echo '[Outgoing buffer now '.Debug::param($this->sending).']';
         return $this;
     }
     
