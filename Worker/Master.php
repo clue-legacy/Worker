@@ -166,7 +166,6 @@ class Worker_Master{
         if(!($slave instanceof Worker_Slave)){
             $slave = Worker_Slave::factoryProcess($slave);
         }
-        $slave->setAutosend(false);
         $this->stream->addClient($slave);
         
         $this->events->fireEvent('slaveConnect',$slave);

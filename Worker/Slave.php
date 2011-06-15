@@ -33,13 +33,6 @@ class Worker_Slave extends Stream_Master_Client{
     private $sending = '';
     
     /**
-     * whether to automatically send data when calling putPacket()
-     * 
-     * @var boolean
-     */
-    protected $autosend = true;
-    
-    /**
      * debugging on/of
      * 
      * @var boolean
@@ -75,11 +68,10 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * @return Worker_Slave
      * @uses Worker_Slave::setDebug() to disable debug (which corrupts stdout)
-     * @uses Worker_Slave::setAutosend() to enable auto-sending STDOUT
      */
     public static function factoryStdio(){
         $slave = new Worker_Slave(new Worker_Communicator_Stdio());
-        return $slave->setDebug(false)->setAutosend(true);
+        return $slave->setDebug(false);
     }
     
     /**
@@ -113,17 +105,6 @@ class Worker_Slave extends Stream_Master_Client{
      */
     public function decorateMethods(){
         return new Worker_Methodify($this);
-    }
-    
-    /**
-     * set whether to automatically send data when calling putPacket()
-     * 
-     * @param boolean $toggle
-     * @return Worker_Slave this (chainable)
-     */
-    public function setAutosend($toggle){
-        $this->autosend = (bool)$toggle;
-        return $this;
     }
     
     /**
@@ -172,16 +153,12 @@ class Worker_Slave extends Stream_Master_Client{
      * @param mixed $data
      * @throws Worker_Exception if buffer exceeds maximum size
      * @return Worker_Slave this (chainable)
-     * @uses Worker_Slave::send() if autosend is set
      */
     public function putPacket($data){
         $this->sending .= $this->protocol->marshall($data);
         
         if(strlen($this->sending) > self::BUFFER_MAX){
             throw new Worker_Exception_Communication('Outgoing buffer size of '.Debug::param(strlen($this->sending)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
-        }
-        if($this->autosend){
-            $this->streamSend();
         }
         return $this;
     }
