@@ -152,14 +152,15 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * @param mixed $data
      * @throws Worker_Exception if buffer exceeds maximum size
-     * @return Worker_Slave this (chainable)
+     * @return Worker_Slave $this (chainable)
+     * @uses Worker_Protocol::marshall()
      */
     public function putPacket($data){
-        $this->sending .= $this->protocol->marshall($data);
-        
-        if(strlen($this->sending) > self::BUFFER_MAX){
-            throw new Worker_Exception_Communication('Outgoing buffer size of '.Debug::param(strlen($this->sending)).' exceeds maximum of '.Debug::param(self::BUFFER_MAX));
+        $packet = $this->protocol->marshall($data);
+        if(strlen($this->sending.$packet) > self::BUFFER_MAX){
+            throw new Worker_Exception_Communication('Adding '.strlen($packet).' byte(s) "'.$packet.'" to outgoing buffer exceeds maximum of '.self::BUFFER_MAX.' bytes');
         }
+        $this->sending .= $packet;
         return $this;
     }
     
