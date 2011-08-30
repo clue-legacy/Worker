@@ -47,9 +47,9 @@ class Worker_Communicator_Stream extends Worker_Communicator{
             }
             
             $errstr = NULL; $errno = NULL;
-            $this->stream = fsockopen($hostname,$port,$errno,$errstr,self::TIMEOUT_CONNECTION);
+            $this->stream = @fsockopen($hostname,$port,$errno,$errstr,self::TIMEOUT_CONNECTION);
             if($this->stream === false){
-                throw new Worker_Exception('Unable to open socket to '.Debug::param($hostname).':'.Debug::param($port).' : '.Debug::param($errstr));
+                throw new Worker_Exception('Unable to open socket to '.Debug::param($hostname).':'.Debug::param($port).' : '.Debug::param($errstr).' (code '.Debug::param($errno).')');
             }
         }
     }
