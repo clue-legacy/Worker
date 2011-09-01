@@ -20,7 +20,6 @@ class Worker_Proxy_Block extends Worker_Proxy{
      * @uses Worker_Slave::call()
      */
     public function __call($name,$args){
-        $job = new Worker_Job($name,$args);
-        return $this->slave->call($job);
+        return $this->slave->call(new Worker_Job($name,$args));
     }
 }

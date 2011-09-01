@@ -7,12 +7,9 @@ class Worker_Proxy_Background extends Worker_Proxy{
      * @param string $name
      * @param array  $args
      * @return Worker_Job
-     * @uses Worker_Slave::putJob()
+     * @uses Worker_Slave::callBackground()
      */
     public function __call($name,$args){
-        $job = new Worker_Job($name,$args);
-        $this->jobs[] = $job;
-        $this->slave->putJob($job,$this);
-        return $job;
+        return $this->slave->callBackground(new Worker_Job($name,$args));
     }
 }
