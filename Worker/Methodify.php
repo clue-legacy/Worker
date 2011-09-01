@@ -275,17 +275,16 @@ class Worker_Methodify extends Worker_Slave{
     /**
      * add new method to be offered to the other side
      * 
-     * @param string   $name
-     * @param callback $fn
+     * @param string        $name
+     * @param callback|NULL $fn
      * @return Worker_Methodify $this (chainable)
      * @uses Worker_Methods::addMethod()
      * @uses Worker_Methods::toPacket()
      * @uses Worker_Slave::putPacket()
      */
-    public function addMethod($name,$fn){
+    public function addMethod($name,$fn=NULL){
         $this->methods->addMethod($name,$fn);
-        $this->putPacket($this->methods->toPacket());
-        return $this;
+        return $this->putPacket($this->methods->toPacket());
     }
     
     /**

@@ -48,11 +48,14 @@ class Worker_Methods implements Countable{
     /**
      * add single method
      * 
-     * @param string   $name
-     * @param callback $fn
+     * @param string        $name
+     * @param callback|NULL $fn
      * @return Worker_Methods $this (chainable)
      */
     public function addMethod($name,$fn){
+        if($fn === NULL && is_string($name)){
+            $fn = $name;
+        }
         $this->methods[$name] = $fn;
         return $this;
     }

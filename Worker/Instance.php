@@ -140,14 +140,14 @@ class Worker_Instance extends Worker_Master{
     /**
      * add new global method to be offered to all clients
      * 
-     * @param string   $name
-     * @param callback $fn
+     * @param string        $name
+     * @param callback|NULL $fn
      * @return Worker_Instance $this (chainable)
      * @uses Worker_Methods::addMethod()
      * @uses Worker_Slave::hasMethod()
      * @uses Worker_Slave::addMethod()
      */
-    public function addMethod($name,$fn){
+    public function addMethod($name,$fn=NULL){
         $this->methods->addMethod($name,$fn);
         
         foreach($this->getMethodSlaves() as $slave){                            // forward method to all clients
