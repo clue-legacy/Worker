@@ -119,6 +119,23 @@ class Worker_Instance extends Worker_Master{
         return call_user_func_array(array($slave,'call'),func_get_args());
     }
     
+    /**
+     * call given remote function in the background
+     * 
+     * @param string $method
+     * @return Worker_Job
+     * @uses Worker_Instance::getRemoteMethodSlave()
+     * @uses Worker_Slave::callBackground()
+     */
+    public function callBackground($method){
+        $slave = $this->getRemoteMethodSlave($method);
+        return call_user_func_array(array($slave,'callBackground'),func_get_args());
+    }
+    
+    public function proxyBackground(){
+        return new Worker_Proxy_Background($this);
+    }
+    
     public function proxyBlock(){
         return new Worker_Proxy_Block($this);
     }
