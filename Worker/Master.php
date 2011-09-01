@@ -198,6 +198,22 @@ class Worker_Master{
     }
     
     /**
+     * get slave instance for given slave ID
+     * 
+     * @param int $id
+     * @return Worker_Slave
+     * @throws Worker_Exception if there's no slave with the given ID
+     * @uses Stream_Master_Standalone::getClient()
+     */
+    public function getSlave($id){
+        try{
+            return $this->stream->getClient($id);
+        }
+        catch(Exception $e){
+            throw new Worker_Exception('Unknown slave given');
+        }
+    }
+    /**
      * get id of given slave
      * 
      * @param Worker_Slave $slave
