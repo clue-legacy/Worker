@@ -11,6 +11,9 @@
  * @link https://github.com/clue/Worker
  */
 class Worker_Communicator_Stdio extends Worker_Communicator{
+    /**
+     * don't bother trying to closing standard input/output streams 
+     */
     public function close(){ }
     
     public function getStreamRead(){
