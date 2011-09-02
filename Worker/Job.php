@@ -16,7 +16,7 @@ class Worker_Job{
      * 
      * @var string
      */
-    protected $callee;
+    protected $method;
     
     /**
      * function arguments
@@ -77,11 +77,11 @@ class Worker_Job{
     /**
      * instanciate new exception
      * 
-     * @param string $callee
+     * @param string $method
      * @param array  $arguments
      */
-    public function __construct($callee,$arguments){
-        $this->callee    = $callee;
+    public function __construct($method,$arguments){
+        $this->method    = $method;
         $this->arguments = $arguments;
         
         $this->handle = mt_rand();
@@ -106,7 +106,7 @@ class Worker_Job{
             
         $this->timeStart = microtime(true);
         try{
-            $this->return = $methods->call($this->callee,$this->arguments);
+            $this->return = $methods->call($this->method,$this->arguments);
         }
         catch(Exception $e){
             $r = new ReflectionObject($e);                                      // hide exception trace
@@ -131,12 +131,75 @@ class Worker_Job{
     }
     
     /**
+     * get method argument
+     * 
+     * @return array
+     */
+    public function getArgs(){
+        return $this->arguments;
+    }
+    
+    /**
+     * get method name
+     * 
+     * @return string
+     */
+    public function getMethod(){
+        return $this->method;
+    }
+    
+    /**
+     * get exception thrown (if any)
+     * 
+     * @return Exception|NULL
+     */
+    public function getException(){
+        return $this->exception;
+    }
+    
+    /**
+     * get return value
+     * 
+     * @return mixed
+     */
+    public function getReturn(){
+        return $this->return;
+    }
+    
+    /**
      * get internal job handle
      * 
      * @return mixed
      */
     public function getHandle(){
         return $this->handle;
+    }
+    
+    /**
+     * get time job was created on
+     * 
+     * @return float
+     */
+    public function getTimeCreate(){
+        return $this->timeCreate;
+    }
+    
+    /**
+     * get time job was ended on
+     * 
+     * @return float|NULL
+     */
+    public function getTimeEnd(){
+        return $this->timeEnd;
+    }
+    
+    /**
+     * get time job was ended on
+     * 
+     * @return float|NULL
+     */
+    public function getTimeStart(){
+        return $this->timeStart;
     }
     
     /**
@@ -166,8 +229,22 @@ class Worker_Job{
         return (microtime(true)-$this->timeEnd+$this->timeStart-$this->timeCreate);
     }
     
+    /**
+     * returns whether the job has already been started
+     * 
+     * @return boolean
+     */
     public function isStarted(){
         return ($this->timeStart !== NULL);
+    }
+    
+    /**
+     * returns whether the job is finished (i.e. result is available)
+     * 
+     * @return boolean
+     */
+    public function isFinished(){
+        return ($this->timeEnd !== NULL);
     }
     
     /**
