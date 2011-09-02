@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ * each side is a worker instance (abstraction of master/slave)
  * 
  * @author Christian Lück <christian@lueck.tv>
  * @copyright Copyright (c) 2011, Christian Lück
@@ -11,11 +11,10 @@
  * @link https://github.com/clue/Worker
  */
 class Worker_Instance extends Worker_Master{
-    
     /**
      * array of global methods to be sent to all connected slaves
      * 
-     * @var array
+     * @var Worker_Methods
      */
     protected $methods;
     
@@ -141,7 +140,7 @@ class Worker_Instance extends Worker_Master{
     }
     
     /**
-     * add new server
+     * add new server (i.e. connect to remote server end)
      * 
      * @param string|int $server
      * @return Worker_Instance $this (chainable)

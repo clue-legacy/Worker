@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ * represent a single connection to another worker instance
  * 
  * @author Christian Lück <christian@lueck.tv>
  * @copyright Copyright (c) 2011, Christian Lück

@@ -1,7 +1,7 @@
 <?php
 
 /**
- * 
+ * master can handle multiple connections to different kinds of worker instances
  * 
  * @author Christian Lück <christian@lueck.tv>
  * @copyright Copyright (c) 2011, Christian Lück
@@ -11,13 +11,6 @@
  * @link https://github.com/clue/Worker
  */
 class Worker_Master{
-    /**
-     * timeout for establishing new connections
-     * 
-     * @var float
-     */
-    const TIMEOUT_CONNECTION = 30;
-    
     /**
      * array of active tasks
      * 
