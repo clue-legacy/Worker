@@ -216,9 +216,7 @@ class Worker_Slave extends Stream_Master_Client{
         $master = new Stream_Master_Standalone();
         $master->addClient(new Worker_Adapter_Packet($this));
         if($timeout !== NULL){
-            /*$master->addEvent('timeout',function(){
-                throw new Worker_Exception_Timeout('Timeout');
-            })->setTimeout($timeout);*/
+            $master->setTimeout($timeout,array($this,'onTimeoutException'));
         }
         return $master->start();
     }
@@ -334,6 +332,15 @@ class Worker_Slave extends Stream_Master_Client{
     }
     
     /**
+     * called when a timeout occurs: throw timeout exception
+     * 
+     * @throws Worker_Exception_Timeout
+     */
+    public function onTimeoutException(){
+        throw new Worker_Exception_Timeout('Communication with remote end timed out');
+    }
+    
+    /**
      * actually send outgoing buffer to worker stream
      * 
      * @throws Worker_Exception on error
@@ -363,7 +370,6 @@ class Worker_Slave extends Stream_Master_Client{
         }
         return $this;
     }
-    
     
     /**
      * start main loop, wait for packets, handle packets
