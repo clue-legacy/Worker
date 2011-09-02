@@ -98,9 +98,9 @@ class Worker_Methodify extends Worker_Slave{
      * @param string|Worker_Job $name
      * @return mixed return value as-is
      * @throws Exception exception as-is
-     * @uses Worker_Slave::putPacket()
-     * @uses Worker_Slave::getPacketWait()
-     * @uses Worker_Protocol::putBacks() to put back invalid packets received while waiting
+     * @uses Worker_Slave::putPacket() to transmit send job packet
+     * @uses Worker_Methodify::waitJob() to wait for job results
+     * @uses Worker_Job::ret() to process return value
      */
     public function call($name){
         if($name instanceof Worker_Job){
@@ -111,10 +111,21 @@ class Worker_Methodify extends Worker_Slave{
             $job = new Worker_Job($name,$args); // create new job for given arguments
         }
         
-        $this->putPacket($job);
+        return $this->putPacket($job)->waitJob($job)->ret();
+    }
+    
+    /**
+     * wait for the given (background) job to return
+     * 
+     * @param Worker_Job $job incomplete job
+     * @return Worker_Job complete job including job results (NOT the same as input argument!)
+     * @uses Worker_Slave::getPacketWait() to wait for result packet
+     * @uses Worker_Protocol::putBacks() to put back invalid packets received while waiting
+     */
+    public function waitJob($job){
         $handle = $job->getHandle();
         
-        $packets = array();
+        $packets = array();                                                     // buffer of useless packets received in the meantime
         do{
             if($this->debug) Debug::notice('[Wait for next packet]');
             $packet = $this->getPacketWait();                                   // wait for new packet
@@ -133,7 +144,7 @@ class Worker_Methodify extends Worker_Slave{
             $this->protocol->putBacks($packets);
         }
         
-        return $job->ret();                                                     // return job results
+        return $job;                                                            // return job results
     }
     
     /**
