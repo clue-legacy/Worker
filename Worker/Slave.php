@@ -202,9 +202,10 @@ class Worker_Slave extends Stream_Master_Client{
      * @param float|NULL $timeout (optional) timeout in seconds, NULL=wait forever
      * @return mixed $data
      * @throws Worker_Exception on error or when timeout is reached
-     * @uses Worker_Slave::getPacket() to check when a packet is finished
-     * @uses Worker_Slave::streamSend()
-     * @uses Worker_Slave::streamReceive()
+     * @uses Worker_Slave::getPacket() to return immediately if a packet is ready
+     * @uses Worker_Adapter_Packet
+     * @uses Stream_Master_Standalone::addClient()
+     * @uses Stream_Master_Standalone::start()
      */
     public function getPacketWait($timeout=NULL){
         try{                                                                    // try to get packet once
@@ -213,26 +214,12 @@ class Worker_Slave extends Stream_Master_Client{
         catch(Worker_Exception $e){ }
         
         $master = new Stream_Master_Standalone();
-        $master->addEvent('clientWrite',function($client){
-            $client->streamSend();
-        });
-        $master->addEvent('clientRead',function($client) use ($master){
-            $client->streamReceive(); // try to read data, may throw an exception
-            
-            try{
-                $packet = $client->getPacket();                                 // try to get packet
-            }
-            catch(Exception $e){                                                // ignore errors in case packet is not complete
-                return;
-            }
-            $master->stop($packet);
-        });
+        $master->addClient(new Worker_Adapter_Packet($this));
         if($timeout !== NULL){
-            $master->addEvent('timeout',function(){
+            /*$master->addEvent('timeout',function(){
                 throw new Worker_Exception_Timeout('Timeout');
-            })->setTimeout($timeout);
+            })->setTimeout($timeout);*/
         }
-        $master->addClient($this);
         return $master->start();
     }
     
@@ -385,32 +372,13 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * @return Worker_Slave $this (chainable)
      * @throws Worker_Exception on error
+     * @uses Worker_Adapter_Stream
      * @uses Stream_Master_Standalone::addClient()
      * @uses Stream_Master_Standalone::start()
-     * @uses Stream_Master_Standalone::stop() to stop event loop when connection is closed
-     * @uses Worker_Slave::streamSend()
-     * @uses Worker_Slave::streamReceive()
-     * @uses Worker_Slave::handlePackets()
      */
     public function start(){
         $master = new Stream_Master_Standalone();
-        $master->addEvent('clientWrite',function($client) use ($master){
-            try{
-                $client->streamSend();
-            }
-            catch(Worker_Exception_Disconnect $e){
-                $master->stop();
-            }
-        });
-        $master->addEvent('clientRead',function($client) use ($master){
-            try{
-                $client->streamReceive()->handlePackets();
-            }
-            catch(Worker_Exception_Disconnect $e){ 
-                $master->stop();
-            }
-        });
-        $master->addClient($this);
+        $master->addClient(new Worker_Adapter_Stream($this));
         $master->start();
         return $this;
     }
