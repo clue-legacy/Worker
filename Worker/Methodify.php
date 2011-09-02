@@ -98,7 +98,7 @@ class Worker_Methodify extends Worker_Slave{
     }
     
     /**
-     * call given method (and optional arguments)
+     * call given method (with optional arguments)
      * 
      * this is a blocking call and wait for the given job to be finished
      * 
@@ -119,6 +119,28 @@ class Worker_Methodify extends Worker_Slave{
         }
         
         return $this->putPacket($job)->waitJob($job)->ret();
+    }
+    
+    /**
+     * call given method in the background (with optional arguments)
+     * 
+     * this is a non-blocking call which will put the job into the outgoing buffer and return the job instance
+     * 
+     * @param string|Worker_Job $name
+     * @return Worker_Job
+     * @uses Worker_Slave::putPacket() to transmit send job packet
+     */
+    public function callBackground($name){
+        if($name instanceof Worker_Job){
+            $job = $name;
+        }else{
+            $args = func_get_args();
+            unset($args[0]);
+            $job = new Worker_Job($name,$args); // create new job for given arguments
+        }
+        
+        $this->putPacket($job);
+        return $job;
     }
     
     /**
