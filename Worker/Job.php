@@ -158,6 +158,15 @@ class Worker_Job{
     }
     
     /**
+     * get job output (echo / print)
+     * 
+     * @return string
+     */
+    public function getOutput(){
+        return $this->return;
+    }
+    
+    /**
      * get return value
      * 
      * @return mixed
@@ -254,6 +263,9 @@ class Worker_Job{
      * @throws Exception
      */
     public function ret(){
+        if($this->timeEnd === NULL){
+            throw new Worker_Exception('Job has yet to be finished');
+        }
         if($this->output !== ''){
             echo $this->output;
         }
@@ -261,5 +273,39 @@ class Worker_Job{
             throw $this->exception;
         }
         return $this->return;
+    }
+    
+    /**
+     * get return value after waiting for job results
+     * 
+     * @param Worker_Methodify $slave
+     * @param NULL|float   $timeout (optional) timeout in seconds
+     * @return mixed
+     * @throws Exception
+     * @uses Worker_Job::waitFinish()
+     * @uses Worker_Job::ret()
+     */
+    public function retWait($slave,$timeoutAt=NULL){
+        return $this->waitFinish($slave,$timeoutAt)->ret();
+    }
+    
+    /**
+     * wait for the job to finish
+     * 
+     * @param Worker_Methodify $slave
+     * @param NULL|timeout     $timeoutAt (optional) timeout in seconds
+     * @return Worker_Job $this (chainable)
+     * @uses Worker_Methodify::waitJob()
+     */
+    public function waitFinish($slave,$timeoutAt=NULL){
+        if($this->timeEnd === NULL){
+            $new = $slave->waitJob($this,$timeoutAt);
+            $this->output    = $new->getOutput();
+            $this->return    = $new->getReturn();
+            $this->exception = $new->getException();
+            $this->timeStart = $new->getTimeStart();
+            $this->timeEnd   = $new->getTimeEnd();
+        }
+        return $this;
     }
 }
