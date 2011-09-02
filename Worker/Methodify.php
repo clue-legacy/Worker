@@ -1,7 +1,14 @@
 <?php
 
 /**
- * temporary class holding slave methods
+ * decorator class holding slave methods
+ * 
+ * @author Christian Lück <christian@lueck.tv>
+ * @copyright Copyright (c) 2011, Christian Lück
+ * @license http://www.opensource.org/licenses/mit-license MIT License
+ * @package Worker
+ * @version v0.0.1
+ * @link https://github.com/clue/Worker
  */
 class Worker_Methodify extends Worker_Slave{
         
@@ -227,39 +234,6 @@ class Worker_Methodify extends Worker_Slave{
         if($this->debug) Debug::notice('[Unknown incoming packet '.Debug::param($packet).']');
         
         throw new Worker_Exception_Communication('Unknown incoming packet');
-    }
-    
-    /**
-     * DEPRECATED! start listening for jobs on given object
-     * 
-     * @param mixed $on instance or object to call methods on
-     * @deprecated use work() instead
-     * @uses Worker_Slave::setAutosend() to disable autosend (as we're starting a main loop anyway)
-     * @uses Worker_Methodify::addMethods()
-     * @uses Worker_Methodify::work()
-     */
-    public function serve($on){
-        $this->setAutosend(false);
-        
-        $this->addMethods($on);
-        $this->work();
-    }
-    
-    /**
-     * start listening for jobs on current methods
-     * 
-     * @uses Worker_Slave::getPacketWait() to wait for new job
-     * @uses Worker_Methodify::handleJob() to execute job
-     */
-    public function work(){
-        while(true){
-            $packet = $this->getPacketWait();
-            if($packet instanceof Worker_Job){
-                $this->handleJob($packet);
-            }else{                                                              // invalid packet
-                echo 'UNKNOWN PACKET: '.Debug::param($packet).NL;
-            }
-        }
     }
     
     /**
