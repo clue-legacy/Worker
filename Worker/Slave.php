@@ -352,7 +352,7 @@ class Worker_Slave extends Stream_Master_Client{
         $stream = $this->comm->getStreamWrite();
         if($this->debug) echo '[send '.$len.' byte(s) "'.$this->sending.'" to '.$stream.'...';
         //if($this->debug) echo '[Sending '.Debug::param($this->sending).']';
-        $bytes = fwrite($stream,$this->sending);
+        $bytes = @fwrite($stream,$this->sending); // suppress errors in in case of a broken pipe (connection closed by remote side)
         if($bytes === false){
             if($this->debug) echo ' ERROR]';
             throw new Worker_Exception_Communication('Unable to write data to stream');
