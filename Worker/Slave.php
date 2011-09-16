@@ -148,6 +148,35 @@ class Worker_Slave extends Stream_Master_Client{
     }
     
     /**
+     * check whethere there is a finished packet in the incoming queue (or wait for once to become available)
+     * 
+     * this method will block until a packet is available or timeout is reached
+     * 
+     * @param float|NULL $timeoutIn (optional) timeout in seconds, NULL=wait forever
+     * @return boolean 
+     * @throws Worker_Exception on error
+     * @uses Worker_Slave::hasPacket() to return immediately if a packet is ready
+     * @uses Worker_Adapter_Packet
+     * @uses Stream_Master_Standalone::addClient()
+     * @uses Stream_Master_Standalone::setTimeoutIn()
+     * @uses Stream_Master_Standalone::start()
+     * @uses Worker_Slave::hasPacket() to return result
+     */
+    public function hasPacketWait($timeoutIn=NULL){
+        if($this->hasPacket()){                                                 // check for packet once before setting up network communication
+            return true;
+        }
+        
+        $master = new Stream_Master_Standalone();
+        $master->addClient(new Worker_Adapter_Packet($this));
+        if($timeoutIn !== NULL){
+            $master->setTimeoutIn($timeoutIn);
+        }
+        $master->start();
+        return $this->hasPacket();
+    }
+    
+    /**
      * add new packet to outgoing queue
      * 
      * @param mixed $data
@@ -201,25 +230,16 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * @param float|NULL $timeoutIn (optional) timeout in seconds, NULL=wait forever
      * @return mixed $data
-     * @throws Worker_Exception on error or when timeout is reached
-     * @uses Worker_Slave::getPacket() to return immediately if a packet is ready
-     * @uses Worker_Adapter_Packet
-     * @uses Stream_Master_Standalone::addClient()
-     * @uses Stream_Master_Standalone::setTimeoutIn()
-     * @uses Stream_Master_Standalone::start()
+     * @throws Worker_Exception_Timeout when timeout is given and exceeded
+     * @throws Worker_Exception on error
+     * @uses Worker_Slave::hasPacketWait() to check (and wait) for available packet 
+     * @uses Worker_Slave::getPacket() to actually return packet
      */
     public function getPacketWait($timeoutIn=NULL){
-        try{                                                                    // try to get packet once
-            return $this->getPacket();
+        if(!$this->hasPacketWait($timeoutIn)){
+            throw new Worker_Exception_Timeout('Communication with remote end timed out');
         }
-        catch(Worker_Exception $e){ }
-        
-        $master = new Stream_Master_Standalone();
-        $master->addClient(new Worker_Adapter_Packet($this));
-        if($timeoutIn !== NULL){
-            $master->setTimeoutIn($timeoutIn)->addEvent('timeout',array($this,'onTimeoutException'));
-        }
-        return $master->start();
+        return $this->getPacket();
     }
     
     /**
@@ -330,15 +350,6 @@ class Worker_Slave extends Stream_Master_Client{
      */
     protected function onPacket($packet){
         throw new Worker_Exception_Communication('Unknown incoming packet');
-    }
-    
-    /**
-     * called when a timeout occurs: throw timeout exception
-     * 
-     * @throws Worker_Exception_Timeout
-     */
-    public function onTimeoutException(){
-        throw new Worker_Exception_Timeout('Communication with remote end timed out');
     }
     
     /**

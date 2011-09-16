@@ -33,7 +33,7 @@ class Worker_Adapter_Packet extends Stream_Master_Client{
      * then try to stop master if a new packet is ready
      * 
      * @uses Worker_Slave::streamReceive()
-     * @uses Worker_Slave::getPacket() to check when a packet is finished
+     * @uses Worker_Slave::hasPacket() to check when a packet is finished
      * @uses Stream_Master_Standalone::stop()
      */
     public function onCanRead($master){
@@ -44,13 +44,9 @@ class Worker_Adapter_Packet extends Stream_Master_Client{
             $this->onClose($master);
         }
         
-        try{
-            $packet = $this->slave->getPacket();                                // try to get packet
+        if($this->slave->hasPacket()){
+            $master->stop();
         }
-        catch(Exception $e){                                                    // ignore errors in case packet is not complete
-            return;
-        }
-        $master->stop($packet);
     }
     
     /**
