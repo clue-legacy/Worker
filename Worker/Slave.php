@@ -199,15 +199,16 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * this method will block until a packet is available or timeout is reached
      * 
-     * @param float|NULL $timeout (optional) timeout in seconds, NULL=wait forever
+     * @param float|NULL $timeoutIn (optional) timeout in seconds, NULL=wait forever
      * @return mixed $data
      * @throws Worker_Exception on error or when timeout is reached
      * @uses Worker_Slave::getPacket() to return immediately if a packet is ready
      * @uses Worker_Adapter_Packet
      * @uses Stream_Master_Standalone::addClient()
+     * @uses Stream_Master_Standalone::setTimeoutIn()
      * @uses Stream_Master_Standalone::start()
      */
-    public function getPacketWait($timeout=NULL){
+    public function getPacketWait($timeoutIn=NULL){
         try{                                                                    // try to get packet once
             return $this->getPacket();
         }
@@ -215,8 +216,8 @@ class Worker_Slave extends Stream_Master_Client{
         
         $master = new Stream_Master_Standalone();
         $master->addClient(new Worker_Adapter_Packet($this));
-        if($timeout !== NULL){
-            $master->setTimeout($timeout,array($this,'onTimeoutException'));
+        if($timeoutIn !== NULL){
+            $master->setTimeoutIn($timeoutIn)->addEvent('timeout',array($this,'onTimeoutException'));
         }
         return $master->start();
     }
