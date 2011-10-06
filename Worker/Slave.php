@@ -194,6 +194,34 @@ class Worker_Slave extends Stream_Master_Client{
     }
     
     /**
+     * add packet to outgoing queue and wait for buffer to be sent
+     * 
+     * this method will block until the outgoing buffer has been sent to the remote end or timeout is reached
+     * 
+     * @param mixed      $data      data to send to the remote side
+     * @param float|NULL $timeoutIn (optional) timeout in seconds, NULL=wait forever
+     * @return Worker_Slave $this (chainable)
+     * @throws Worker_Exception on error
+     * @uses Worker_Slave::putPacket() to add given data to outgoing queue
+     * @uses Worker_Adapter_Flush
+     * @uses Stream_Master_Standalone::addClient()
+     * @uses Stream_Master_Standalone::setTimeoutIn()
+     * @uses Stream_Master_Standalone::start()
+     * @todo support sending packets that exceed outgoing buffer size by sending in chunks
+     */
+    public function putPacketWait($data,$timeoutIn=NULL){
+        $this->putPacket($data);
+        
+        $master = new Stream_Master_Standalone();
+        $master->addClient(new Worker_Adapter_Flush($this));
+        if($timeoutIn !== NULL){
+            $master->setTimeoutIn($timeoutIn);
+        }
+        $master->start();
+        return $this;
+    }
+    
+    /**
      * get packet from buffer
      * 
      * @return mixed
