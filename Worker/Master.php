@@ -63,15 +63,14 @@ class Worker_Master{
      * instanciate new master
      */
     public function __construct(){
-        $this->events = new EventEmitter();
-        $this->events->addEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
-        $this->events->addEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
-        
         $this->stream = new Stream_Master_Standalone();
         $this->stream->addEvent('clientConnect',array($this,'onClientConnectForward'));
         $this->stream->addEvent('clientDisconnect',array($this,'onClientDisconnectForward'));
         $this->stream->addEvent('clientRead',array($this,'onClientReadForward'));
         $this->stream->addEvent('clientWrite',array($this,'onClientWriteForward'));
+        
+        $this->events = new EventEmitter();
+        $this->setDebug($this->debug); // initialize echo events
     }
     
     
@@ -99,6 +98,15 @@ class Worker_Master{
         foreach($this->getSlaves() as $slave){
             $slave->setDebug($this->debug); // does not affect decorated instances
         }
+        
+        // make sure to not add duplicate events by removing them first
+        $this->events->removeEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
+        $this->events->removeEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
+        if($this->debug){
+            $this->events->addEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
+            $this->events->addEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
+        }
+        
         return $this;
     }
     
