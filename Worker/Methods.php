@@ -87,10 +87,36 @@ class Worker_Methods implements Countable{
         if(!isset($this->methods[$name])){
             throw new Worker_Exception('Given method does not exist');
         }
-        if(!is_callable($this->methods[$name])){
+        $method = $this->methods[$name];
+        if(!is_callable($method)){
             throw new Worker_Exception('Given method is not callable (but registered)');
         }
-        return call_user_func_array($this->methods[$name],$args);
+        if(is_string($method)){
+            switch(count($args)){
+                case 0:
+                    return $method();
+                case 1:
+                    return $method($args[0]);
+                case 2:
+                    return $method($args[0],$args[1]);
+                case 3:
+                    return $method($args[0],$args[1],$args[2]);
+            }
+        }else if(is_object($method[0])){
+            $obj = $method[0];
+            $call = $method[1];
+            switch(count($args)){
+                case 0:
+                    return $obj->$call();
+                case 1:
+                    return $obj->$call($args[0]);
+                case 2:
+                    return $obj->$call($args[0],$args[1]);
+                case 3:
+                    return $obj->$call($args[0],$args[1],$args[2]);
+            }
+        }
+        return call_user_func_array($method,$args);
     }
     
     /**
