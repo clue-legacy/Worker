@@ -19,4 +19,6 @@ abstract class Worker_Communicator{
      * close all communication streams
      */
     abstract public function close();
+    
+    abstract public function __toString();
 }

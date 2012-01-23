@@ -23,4 +23,8 @@ class Worker_Communicator_Stdio extends Worker_Communicator{
     public function getStreamWrite(){
         return STDOUT;
     }
+    
+    public function __toString(){
+        return 'Standard Input/Output';
+    }
 }

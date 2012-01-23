@@ -12,7 +12,7 @@
  */
 class Worker_Communicator_Stream extends Worker_Communicator{
     /**
-     * connection timeout
+     * timeout for establishing new connections
      * 
      * @var float
      */
@@ -64,5 +64,9 @@ class Worker_Communicator_Stream extends Worker_Communicator{
     
     public function getStreamWrite(){
         return $this->stream;
+    }
+    
+    public function __toString(){
+        return 'Stream to '.stream_socket_get_name($this->stream,true);
     }
 }

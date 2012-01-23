@@ -39,4 +39,17 @@ class Worker_Communicator_Process extends Worker_Communicator{
     public function getStreamWrite(){
         return $this->process->getStreamWrite();
     }
+    
+    /**
+     * get process instance
+     * 
+     * @return Process
+     */
+    public function getProcess(){
+        return $this->process;
+    }
+    
+    public function __toString(){
+        return 'Process ID '.$this->process->getPid().' ("'.$this->process->getCommand().'")';
+    }
 }
