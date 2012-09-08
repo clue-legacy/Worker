@@ -7,8 +7,9 @@ Author:   Christian Lück <christian@lueck.tv>
 Homepage: https://github.com/clue/Worker
 License:  MIT-style license
 
-== Requirements / Dependencies ==
-* PHP 5.3+
+== Dependencies ==
+Required:
+* PHP 5.2+
 * Stream_Master [https://github.com/clue/Stream_Master]
   Handle multiple worker streams
 * EventEmitter [https://github.com/clue/EventEmitter]
