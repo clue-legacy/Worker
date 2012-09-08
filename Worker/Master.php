@@ -303,17 +303,17 @@ class Worker_Master{
      * 
      * @param float|NULL $timeout maximum time to wait as target timestamp (NULL=wait forever)
      * @return Worker_Master this (chainable)
-     * @throws Worker_Exception when timeout is reached
+     * @throws Worker_Exception_Timeout when timeout is reached
+     * @uses Worker_Master::hasPacketWait()
      * @uses Worker_Master::hasPacket()
-     * @uses Worker_Master::waitData()
      */
     public function waitPacket($timeout=NULL){
-        while(!$this->hasPacket()){
-            $this->waitData($timeout);
-            
-            if($timeout !== NULL && microtime(true) > $timeout && !$this->hasPacket()){
-                throw new Worker_Exception_Timeout('Waiting for packet timed out');
-            }
+        if($timeout !== NULL){
+            $timeout -= microtime(true);
+        }
+        $this->hasPacketWait($timeout);
+        if($timeout !== NULL && !$this->hasPacket()){
+            throw new Worker_Exception_Timeout('Waiting for packet timed out');
         }
         return $this;
     }
@@ -427,5 +427,31 @@ class Worker_Master{
             }
         }
         return false;
+    }
+    
+    /**
+     * check whethere there is a finished packet in the incoming queue (or wait for one to become available)
+     *
+     * this method will block until a packet is available or timeout is reached
+     *
+     * @param float|NULL $timeoutIn (optional) timeout in seconds, NULL=wait forever
+     * @return boolean
+     * @throws Worker_Exception on error
+     * @uses Worker_Master::hasPacket() to return immediately if a packet is ready
+     * @uses Stream_Master_Standalone::setTimeoutIn()
+     * @uses Stream_Master_Standalone::start()
+     * @uses Worker_Master::hasPacket() to return result
+     */
+    public function hasPacketWait($timeoutIn=NULL){
+        if($this->hasPacket()){
+            return true;
+        }
+        if($timeoutIn === NULL){
+            $this->stream->setTimeout(NULL);
+        }else{
+            $this->stream->setTimeoutIn($timeoutIn);
+        }
+        $this->stream->start();
+        return $this->hasPacket();
     }
 }
