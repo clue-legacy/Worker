@@ -1,4 +1,5 @@
 {
+    "name": "clue/Worker",
     "require": {
         "evenement/evenement": "1.0.*"
     }
