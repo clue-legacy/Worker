@@ -1,6 +1,13 @@
 {
     "name": "clue/Worker",
     "require": {
-        "evenement/evenement": "1.0.*"
-    }
+        "evenement/evenement": "1.0.*",
+        "clue/Stream_Master": "dev-master"
+    },
+    "repositories": [
+        {
+            "type": "vcs",
+            "url": "https://github.com/clue/Stream_Master"
+        }
+    ]
 }
