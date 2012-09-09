@@ -1,5 +1,9 @@
 <?php
 
+require __DIR__.'/../vendor/autoload.php';
+
+use Evenement\EventEmitter;
+
 /**
  * master can handle multiple connections to different kinds of worker instances
  * 
@@ -100,11 +104,11 @@ class Worker_Master{
         }
         
         // make sure to not add duplicate events by removing them first
-        $this->events->removeEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
-        $this->events->removeEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
+        $this->events->removeListener('slaveConnect',array($this,'onSlaveConnectEcho'));
+        $this->events->removeListener('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
         if($this->debug){
-            $this->events->addEvent('slaveConnect',array($this,'onSlaveConnectEcho'));
-            $this->events->addEvent('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
+            $this->events->on('slaveConnect',array($this,'onSlaveConnectEcho'));
+            $this->events->on('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
         }
         
         return $this;
@@ -131,7 +135,7 @@ class Worker_Master{
     }
     public function onClientDisconnectForward(Stream_Master_Client $slave){
         if($slave instanceof Worker_Slave){
-            $this->events->fireEvent('slaveDisconnect',$slave);
+            $this->events->emit('slaveDisconnect',array($slave));
         }
     }
     public function onClientReadForward(Stream_Master_Client $slave){
@@ -183,7 +187,7 @@ class Worker_Master{
         $slave->setDebug($this->debug);                                         // automatically apply master debug setting to new slaves
         $this->stream->addClient($slave);
         
-        $this->events->fireEvent('slaveConnect',$slave);
+        $this->events->emit('slaveConnect',array($slave));
         
         return $slave;
     }
@@ -243,7 +247,7 @@ class Worker_Master{
     }
     
     public function addEvent($name,$fn){
-        $this->events->addEvent($name,$fn);
+        $this->events->on($name,$fn);
         return $this;
     }
     
@@ -338,7 +342,7 @@ class Worker_Master{
     public function start(){
         $this->go = true;
         
-        $this->events->addEvent('clientRead',array($this,'onClientReadPacket'));
+        $this->events->on('clientRead',array($this,'onClientReadPacket'));
         
         try{
             do{
@@ -347,10 +351,10 @@ class Worker_Master{
         }
         catch(Exception $e){                                                    // an error occured:
             $this->go = false;                                                  // make sure to reset to previous state
-            $this->events->removeEvent('clientRead',array($this,'onClientReadPacket'));
+            $this->events->removeListener('clientRead',array($this,'onClientReadPacket'));
             throw $e;
         }
-        $this->events->removeEvent('clientRead',array($this,'onClientReadPacket'));
+        $this->events->removeListener('clientRead',array($this,'onClientReadPacket'));
         return $this;
     }
     
