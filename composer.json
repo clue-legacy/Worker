@@ -2,12 +2,17 @@
     "name": "clue/Worker",
     "require": {
         "evenement/evenement": "1.0.*",
-        "clue/Stream_Master": "dev-master"
+        "clue/Stream_Master": "dev-master",
+        "clue/Process": "dev-master"
     },
     "repositories": [
         {
             "type": "vcs",
             "url": "https://github.com/clue/Stream_Master"
+        },
+        {
+            "type": "vcs",
+            "url": "https://github.com/clue/Process"
         }
     ],
     "autoload": {
