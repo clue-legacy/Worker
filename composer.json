@@ -9,5 +9,10 @@
             "type": "vcs",
             "url": "https://github.com/clue/Stream_Master"
         }
-    ]
+    ],
+    "autoload": {
+        "psr-0": {
+            "Worker": ""
+        }
+    }
 }
