@@ -4,7 +4,7 @@ require_once __DIR__.'/../../vendor/autoload.php';
 
 $master = Worker_Master::connect()->decorateMethods();
 
-$master->addMethod('test',function($a){
+$master->addMethod('ping',function($a){
     //var_dump($a);
     //throw new Exception();
     //Debug::backtrace();
