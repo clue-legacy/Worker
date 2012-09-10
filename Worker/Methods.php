@@ -102,7 +102,7 @@ class Worker_Methods implements Countable{
                 case 3:
                     return $method($args[0],$args[1],$args[2]);
             }
-        }else if(is_object($method[0])){
+        }else if(is_array($method) && is_object($method[0])){
             $obj = $method[0];
             $call = $method[1];
             switch(count($args)){
