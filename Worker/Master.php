@@ -107,8 +107,6 @@ class Worker_Master{
                 }
             }
         });
-        
-        $this->setDebug($this->debug); // initialize echo events
     }
     
     
@@ -136,28 +134,7 @@ class Worker_Master{
         foreach($this->getSlaves() as $slave){
             $slave->setDebug($this->debug); // does not affect decorated instances
         }
-        
-        // make sure to not add duplicate events by removing them first
-        $this->events->removeListener('slaveConnect',array($this,'onSlaveConnectEcho'));
-        $this->events->removeListener('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
-        if($this->debug){
-            $this->events->on('slaveConnect',array($this,'onSlaveConnectEcho'));
-            $this->events->on('slaveDisconnect',array($this,'onSlaveDisconnectEcho'));
-        }
-        
         return $this;
-    }
-    
-    public function onSlaveConnectEcho(Worker_Slave $slave){
-        echo "\r\nSlave connected: ";
-        var_dump($slave);
-        //echo NL.'SLAVE CONNECTED: '.NL.Debug::param($slave).NL;
-    }
-    
-    public function onSlaveDisconnectEcho(Worker_Slave $slave){
-        echo "\r\nSlave disconnected: ";
-        var_dump($slave);
-        //echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
     }
     
     /**
