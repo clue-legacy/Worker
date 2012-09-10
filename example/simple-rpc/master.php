@@ -3,7 +3,7 @@
 require_once __DIR__.'/../../vendor/autoload.php';
 
 $master = new Worker_Master();
-$master->setDebug(true);
+// $master->setDebug(true);
 $slave = $master->addSlave('php '.dirname(__file__).'/slave.php')->decorateMethods();
 
 echo 'ECHO';
