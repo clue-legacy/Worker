@@ -1,4 +1,4 @@
 eclipse.preferences.version=1
-include_path=0;/worker-php\u00050;/worker-php/vendor\u00052;/output-mirror\u00052;/Process\u00052;/Stream_Master
+include_path=
 phpVersion=php5.3
 use_asp_tags_as_php=false
