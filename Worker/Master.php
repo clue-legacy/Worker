@@ -66,12 +66,48 @@ class Worker_Master{
      */
     public function __construct(){
         $this->stream = new Stream_Master_Standalone();
-        $this->stream->addEvent('clientConnect',array($this,'onClientConnectForward'));
-        $this->stream->addEvent('clientDisconnect',array($this,'onClientDisconnectForward'));
-        $this->stream->addEvent('clientRead',array($this,'onClientReadForward'));
-        $this->stream->addEvent('clientWrite',array($this,'onClientWriteForward'));
-        
         $this->events = new EventEmitter();
+        
+        $stream = $this->stream;
+        $events = $this->events;
+        $master = $this;
+        
+        $this->stream->addEvent('clientConnect',function(Stream_Master_Client $client) use ($master,$stream){
+            //Debug::dump($client,'Connected');
+            //throw new Stream_Master_Exception();
+            
+            $stream->removeClient($client);
+            $master->addSlave(Worker_Slave::factoryStream($client->getStreamRead()));
+        });
+        
+        $this->stream->addEvent('clientDisconnect',function(Stream_Master_Client $slave) use ($events){
+            if($slave instanceof Worker_Slave){
+                $events->emit('slaveDisconnect',array($slave));
+            }
+        });
+        
+        $this->stream->addEvent('clientRead',function(Stream_Master_Client $slave){
+            if($slave instanceof Worker_Slave){
+                try{
+                    $slave->streamReceive();
+                }
+                catch(Worker_Exception_Disconnect $e){
+                    throw new Stream_Master_Exception();
+                }
+            }
+        });
+        
+        $this->stream->addEvent('clientWrite',function(Stream_Master_Client $slave){
+            if($slave instanceof Worker_Slave){
+                try{
+                    $slave->streamSend();
+                }
+                catch(Worker_Exception_Disconnect $e){
+                    throw new Stream_Master_Exception();
+                }
+            }
+        });
+        
         $this->setDebug($this->debug); // initialize echo events
     }
     
@@ -122,51 +158,6 @@ class Worker_Master{
         echo "\r\nSlave disconnected: ";
         var_dump($slave);
         //echo NL.'SLAVE DISCONNECTED:'.NL.Debug::param($slave).NL;
-    }
-    
-    public function onClientConnectForward(Stream_Master_Client $client){
-        //Debug::dump($client,'Connected');
-        //throw new Stream_Master_Exception();
-        
-        $this->stream->removeClient($client);
-        $this->addSlave(Worker_Slave::factoryStream($client->getStreamRead()));
-    }
-    public function onClientDisconnectForward(Stream_Master_Client $slave){
-        if($slave instanceof Worker_Slave){
-            $this->events->emit('slaveDisconnect',array($slave));
-        }
-    }
-    public function onClientReadForward(Stream_Master_Client $slave){
-        if($slave instanceof Worker_Slave){
-            try{
-                $slave->streamReceive();
-            }
-            catch(Worker_Exception_Disconnect $e){
-                throw new Stream_Master_Exception();
-            }
-        }
-    }
-    public function onClientWriteForward(Stream_Master_Client $slave){
-        if($slave instanceof Worker_Slave){
-            try{
-                $slave->streamSend();
-            }
-            catch(Worker_Exception_Disconnect $e){
-                throw new Stream_Master_Exception();
-            }
-        }
-    }
-    
-    /**
-     * called when client has read new data, try to handle packets
-     * 
-     * @param Stream_Master_Client $slave
-     * @uses Worker_Slave::handlePackets()
-     */
-    public function onClientReadPacket(Stream_Master_Client $slave){
-        if($slave instanceof Worker_Slave){
-            $slave->handlePackets();
-        }
     }
     
     /**
@@ -336,11 +327,19 @@ class Worker_Master{
      * @return Worker_Master this (chainable)
      * @uses Worker_Master::onClientReadPacket() via EventEmitter when data arrived
      * @uses Worker_Master::waitData() to actually wait for data
+     * @uses Worker_Slave::handlePackets()
      */
     public function start(){
         $this->go = true;
         
-        $this->events->on('clientRead',array($this,'onClientReadPacket'));
+        // called when client has read new data, try to handle packets
+        $fn = function(Stream_Master_Client $slave){
+            if($slave instanceof Worker_Slave){
+                $slave->handlePackets();
+            }
+        };
+        
+        $this->events->on('clientRead',$fn);
         
         try{
             do{
@@ -349,10 +348,10 @@ class Worker_Master{
         }
         catch(Exception $e){                                                    // an error occured:
             $this->go = false;                                                  // make sure to reset to previous state
-            $this->events->removeListener('clientRead',array($this,'onClientReadPacket'));
+            $this->events->removeListener('clientRead',$fn);
             throw $e;
         }
-        $this->events->removeListener('clientRead',array($this,'onClientReadPacket'));
+        $this->events->removeListener('clientRead',$fn);
         return $this;
     }
     

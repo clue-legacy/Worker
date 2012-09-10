@@ -21,23 +21,17 @@ class Worker_Instance extends Worker_Master{
     /**
      * instanciate new worker server or client
      * 
-     * @uses Worker_Master::addEvent() to automatically attach global methods for each connected slave
+     * @uses Worker_Slave::addMethods() to automatically attach global methods to newly connection slave
      */
     public function __construct(){
         parent::__construct();
         
         $this->methods = new Worker_Methods();
-        $this->addEvent('slaveConnect',array($this,'onSlaveConnectMethods'));
-    }
-    
-    /**
-     * event handler: called when a new slave connects (MUST NOT be called manually!)
-     * 
-     * @param Worker_Slave $slave
-     * @uses Worker_Slave::addMethods() to automatically attach global methods to newly connection slave
-     */
-    public function onSlaveConnectMethods(Worker_Slave $slave){
-        $slave->addMethods($this->methods);
+        $methods &= $this->methods;
+        
+        $this->addEvent('slaveConnect',function(Worker_Slave $slave) use (&$methods){
+            $slave->addMethods($methods);
+        });
     }
     
     /**
