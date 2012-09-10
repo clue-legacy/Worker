@@ -1,6 +1,6 @@
 <?php
 
-require_once(dirname(__FILE__).'/../init.inc.php');
+require_once __DIR__.'/../../vendor/autoload.php';
 
 $master = new Worker_Master();
 $master->setDebug(true);
