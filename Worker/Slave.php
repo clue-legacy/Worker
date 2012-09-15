@@ -1,5 +1,7 @@
 <?php
 
+use Evenement\EventEmitter;
+
 /**
  * represent a single connection to another worker instance
  * 
@@ -53,6 +55,8 @@ class Worker_Slave extends Stream_Master_Client{
      */
     protected $comm;
     
+    protected $events;
+    
     /**
      * create new slave communicating with given process/command
      * 
@@ -96,6 +100,8 @@ class Worker_Slave extends Stream_Master_Client{
         
         $this->protocol = new Worker_Protocol();
         $this->protocol->setMaxlength(self::BUFFER_MAX)->setDebug($this->debug);
+        
+        $this->events = new EventEmitter();
     }
     
     /**
@@ -117,6 +123,14 @@ class Worker_Slave extends Stream_Master_Client{
         $this->debug = (bool)$toggle;
         $this->protocol->setDebug($toggle);
         return $this;
+    }
+    
+    public function addEvent($name,$fn){
+        $this->events->on($name,$fn);
+    }
+    
+    public function addEventOnce($name,$fn){
+        $this->events->once($name,$fn);
     }
     
     /**
@@ -366,7 +380,7 @@ class Worker_Slave extends Stream_Master_Client{
      */
     public function handlePackets(){
         foreach($this->getPackets() as $packet){
-            $this->onPacket($packet);
+            $this->events->emit('packet',array($packet,$this));
         }
         return $this;
     }
@@ -377,6 +391,7 @@ class Worker_Slave extends Stream_Master_Client{
      * @param mixed $packet
      */
     protected function onPacket($packet){
+        
         throw new Worker_Exception_Communication('Unknown incoming packet');
     }
     
