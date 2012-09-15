@@ -316,7 +316,7 @@ class Worker_Master{
             }
         };
         
-        $this->events->on('clientRead',$fn);
+        $this->stream->addEvent('clientRead',$fn);
         
         try{
             do{
@@ -325,10 +325,10 @@ class Worker_Master{
         }
         catch(Exception $e){                                                    // an error occured:
             $this->go = false;                                                  // make sure to reset to previous state
-            $this->events->removeListener('clientRead',$fn);
+            $this->stream->removeEvent('clientRead',$fn);
             throw $e;
         }
-        $this->events->removeListener('clientRead',$fn);
+        $this->stream->removeEvent('clientRead',$fn);
         return $this;
     }
     
