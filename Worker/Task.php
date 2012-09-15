@@ -19,9 +19,7 @@ class Worker_Task{
      * @return Worker_Task
      */
     public static function factoryOnce($max,$callback){
-        $args = func_get_args();
-        unset($args[0],$args[1]);
-        return new Worker_Task(NULL,$max,$callback,$args);
+        return new Worker_Task(NULL,$max,$callback);
     }
     
     /**
@@ -31,9 +29,7 @@ class Worker_Task{
      * @return Worker_Task
      */
     public static function factoryAsap($callback){
-        $args = func_get_args();
-        unset($args[0]);
-        $task = new Worker_Task(NULL,NULL,$callback,$args);
+        $task = new Worker_Task(NULL,NULL,$callback);
         $task->state = self::STATE_HIT;
         return $task;
     }
@@ -47,9 +43,7 @@ class Worker_Task{
      * @return Worker_Task
      */
     public static function factory($min,$max,$callback){
-        $args = func_get_args();
-        unset($args[0],$args[1],$args[2]);
-        return new Worker_Task($min,$max,$callback,$args);
+        return new Worker_Task($min,$max,$callback);
     }
     
     ////////////////////////////////////////////////////////////////////////////
@@ -83,13 +77,6 @@ class Worker_Task{
      * @var callback
      */
     protected $callback;
-    
-    /**
-     * callback arguments
-     * 
-     * @var array[mixed]
-     */
-    protected $args;
     
     /**
      * earliest possible time of execution (requires hit())
@@ -126,9 +113,8 @@ class Worker_Task{
      * @param float|NULL $min earliest possible time of execution (requires hit)
      * @param float|NULL $max latest time of execution (ignores hit)
      */
-    protected function __construct($min,$max,$callback,$args){
+    protected function __construct($min,$max,$callback){
         $this->callback = $callback;
-        $this->args     = $args;
         
         $this->timeMin = $min;
         $this->timeMax = $max;
@@ -192,10 +178,10 @@ class Worker_Task{
         }
         
         $fn = $this->callback;
-        if($this->args === array() && (is_string($fn) || is_callable(array($fn,'__invoke')))){
-            $fn();
+        if(is_string($fn) || is_callable(array($fn,'__invoke'))){
+            $fn($this);
         }else{
-            call_user_func_array($fn,$this->args);
+            call_user_func($fn,$this);
         }
         
         return $this;
