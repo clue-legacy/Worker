@@ -45,6 +45,11 @@ class Worker_Methodify extends Worker_Slave{
         parent::__construct($slave->getCommunicator());
         $this->setDebug($slave->getDebug());
         $this->methods = new Worker_Methods();
+        
+        $that = $this;
+        $slave->addEvent('packet',function($packet) use ($that){
+            $that->onPacket($packet);
+        });
     }
     
     /**
@@ -242,7 +247,7 @@ class Worker_Methodify extends Worker_Slave{
      * @throws Worker_Exception_Communication if given packet is invalid
      * @uses Worker_Methodify::handleJob() to try to handle packet as job
      */
-    protected function onPacket($packet){
+    public function onPacket($packet){
         if($packet instanceof Worker_Job){
             if($this->handleJob($packet)){
                 return;

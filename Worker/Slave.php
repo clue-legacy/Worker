@@ -336,7 +336,6 @@ class Worker_Slave extends Stream_Master_Client{
      * @return Worker_Slave $this (chainable)
      * @uses Worker_Communicator::getStreamRead()
      * @uses Worker_Slave::getPackets()
-     * @uses Worker_Slave::onPacket() on each packet received
      */
     public function streamReceive(){
         $stream = $this->comm->getStreamRead();
@@ -376,23 +375,13 @@ class Worker_Slave extends Stream_Master_Client{
      * @return Worker_Slave $this (chainable)
      * @throws Worker_Exception if either packet can not be handled
      * @uses Worker_Slave::getPackets() to get all packets
-     * @uses Worker_Slave::onPacket() for each packet
+     * @uses EventEmitter::emit() for each packet
      */
     public function handlePackets(){
         foreach($this->getPackets() as $packet){
             $this->events->emit('packet',array($packet,$this));
         }
         return $this;
-    }
-    
-    /**
-     * called when new packet has been received
-     * 
-     * @param mixed $packet
-     */
-    protected function onPacket($packet){
-        
-        throw new Worker_Exception_Communication('Unknown incoming packet');
     }
     
     /**
