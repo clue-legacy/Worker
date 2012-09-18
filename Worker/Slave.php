@@ -102,6 +102,8 @@ class Worker_Slave extends Stream_Master_Client{
         $this->protocol->setMaxlength(self::BUFFER_MAX)->setDebug($this->debug);
         
         $this->events = new EventEmitter();
+        
+        $this->methodify = new Worker_Methodify($this);
     }
     
     /**
@@ -110,7 +112,7 @@ class Worker_Slave extends Stream_Master_Client{
      * @return Worker_Methodify
      */
     public function decorateMethods(){
-        return new Worker_Methodify($this);
+        return $this->methodify;
     }
     
     /**
@@ -122,6 +124,7 @@ class Worker_Slave extends Stream_Master_Client{
     public function setDebug($toggle){
         $this->debug = (bool)$toggle;
         $this->protocol->setDebug($toggle);
+        $this->methodify->setDebug($toggle);
         return $this;
     }
     
@@ -204,6 +207,11 @@ class Worker_Slave extends Stream_Master_Client{
             throw new Worker_Exception_Communication('Adding '.strlen($packet).' byte(s) "'.$packet.'" to outgoing buffer exceeds maximum of '.self::BUFFER_MAX.' bytes');
         }
         $this->sending .= $packet;
+        return $this;
+    }
+    
+    public function putBacks(array $packets){
+        $this->protocol->putBacks($packets);
         return $this;
     }
     
