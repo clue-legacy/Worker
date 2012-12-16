@@ -18,14 +18,14 @@ class Worker_Slave extends Stream_Master_Client{
      * 
      * @var int
      */
-    const BUFFER_CHUNK = 4096; // read 4KiB each
+    const BUFFER_CHUNK = 8192; // read 8 KiB each
     
     /**
      * maximum buffer length
      * 
      * @var int
      */
-    const BUFFER_MAX = 16384; // maximum of 16KiB
+    const BUFFER_MAX = 65536; // maximum of 64 KiB
     
     /**
      * outgoing buffer
