@@ -118,7 +118,7 @@ class Worker_Task{
         
         $this->timeMin = $min;
         $this->timeMax = $max;
-        $this->setTimeBase();
+        // $this->setTimeBase();
         
         $this->state   = self::STATE_IDLE;
     }
